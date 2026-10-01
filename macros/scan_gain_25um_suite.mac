@@ -1,0 +1,31 @@
+# Suite du balayage 25 um / 3 mm, au-dela de 1700 V.
+# Statistique volontairement faible : on ne cherche ici que la tendance du gain,
+# pas le TTS (la FWHM directe exige 50 avalanches exploitables).
+#
+# ATTENTION. Le plafond de 1e6 tracks mord des que le gain depasse ~5e5, soit
+# vers 2000 V. Au-dela, le nombre reporte n'est plus un gain mais le plafond :
+# la courbe semblera s'aplatir alors que le modele, lui, continue de diverger.
+# La colonne limites(%) de l'analyse le signale point par point.
+/run/numberOfThreads 10
+/random/setSeeds 28092026 4477
+/mcp/setPlateDiameter 2 mm
+/mcp/setThickness 3 mm
+/mcp/setChannelDiameter 25 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 1800 V
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+/mcp/setWuModel true
+/run/initialize
+
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+/run/printProgress 5
+
+/control/alias nEvents 10
+/control/foreach macros/scan_gain_25um_point.mac voltage "1800 1900 2000 2100 2200 2300 2400 2500 2600"

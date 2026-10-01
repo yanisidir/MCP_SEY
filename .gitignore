@@ -1,0 +1,9 @@
+# Repertoire de compilation
+build/
+
+# Sorties de simulation
+*.root
+
+# Divers
+*.pyc
+__pycache__/

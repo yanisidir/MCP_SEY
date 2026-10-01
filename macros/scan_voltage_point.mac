@@ -1,0 +1,5 @@
+# SetVoltage reconstruit automatiquement la geometrie et les champs si necessaire.
+/mcp/setVoltage {voltage} V
+/mcp/setOutputFile voltage_{voltage}V_50G_{nEvents}events.root
+/control/echo --- tension : {voltage} V
+/run/beamOn {nEvents}

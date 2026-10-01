@@ -1,0 +1,154 @@
+# ============================================================
+# run_all_tranches.mac
+#
+# Exécute séquentiellement les 10 tranches.
+# Chaque tranche définit ses paramètres puis appelle tranche.mac
+# ============================================================
+
+# ==================== CONFIGURATION GENERALE ====================
+
+/run/numberOfThreads 10
+/random/setSeeds 16092026 8213
+
+/mcp/setPlateDiameter 0.5 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 1000 V
+
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+
+/run/initialize
+
+# Les valeurs de muZ ci-dessous sont dans le repere de la simulation amont :
+# zOrigin est la position de la face d'entree de la plaque dans ce repere.
+# Sans cette ligne, muZ ~ 9.5 mm sort de la plaque de 1 mm et
+# PrimaryGeneratorAction leve une exception fatale des le premier beamOn.
+/source/gauss/zOrigin 9.5 mm
+
+# Injections par tranche. A 100, il ne reste que 2 a 11 evenements exploitables
+# pour les temps (seuil de 20 dans analysis/scan_tranches.C) : la plupart des
+# primaires de 277 keV traversent sans multiplier. Le balayage complet coute
+# environ 2 s pour 100 injections, donc la statistique est peu chere.
+/control/alias nEvents 5000
+
+# ==================== TRANCHE 0 ====================
+/control/alias tranche 0
+/control/alias muE 269.961
+/control/alias sigmaE 138.426
+/control/alias muZ 9.55733
+/control/alias sigmaZ 0.0262282
+/control/alias muPz 177.129
+/control/alias sigmaPz 318.022
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 1 ====================
+/control/alias tranche 1
+/control/alias muE 277.279
+/control/alias sigmaE 134.599
+/control/alias muZ 9.65046
+/control/alias sigmaZ 0.0288612
+/control/alias muPz 178.119
+/control/alias sigmaPz 313.170
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 2 ====================
+/control/alias tranche 2
+/control/alias muE 276.598
+/control/alias sigmaE 134.561
+/control/alias muZ 9.74960
+/control/alias sigmaZ 0.0287582
+/control/alias muPz 186.016
+/control/alias sigmaPz 314.190
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 3 ====================
+/control/alias tranche 3
+/control/alias muE 277.146
+/control/alias sigmaE 134.546
+/control/alias muZ 9.85036
+/control/alias sigmaZ 0.0289118
+/control/alias muPz 182.728
+/control/alias sigmaPz 312.990
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 4 ====================
+/control/alias tranche 4
+/control/alias muE 277.460
+/control/alias sigmaE 134.493
+/control/alias muZ 9.94955
+/control/alias sigmaZ 0.0287996
+/control/alias muPz 184.388
+/control/alias sigmaPz 313.972
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 5 ====================
+/control/alias tranche 5
+/control/alias muE 275.111
+/control/alias sigmaE 135.057
+/control/alias muZ 10.0501
+/control/alias sigmaZ 0.0290022
+/control/alias muPz 180.506
+/control/alias sigmaPz 312.256
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 6 ====================
+/control/alias tranche 6
+/control/alias muE 276.976
+/control/alias sigmaE 134.320
+/control/alias muZ 10.1495
+/control/alias sigmaZ 0.0288015
+/control/alias muPz 185.777
+/control/alias sigmaPz 310.777
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 7 ====================
+/control/alias tranche 7
+/control/alias muE 277.511
+/control/alias sigmaE 134.732
+/control/alias muZ 10.2497
+/control/alias sigmaZ 0.0289480
+/control/alias muPz 186.171
+/control/alias sigmaPz 313.250
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 8 ====================
+/control/alias tranche 8
+/control/alias muE 279.428
+/control/alias sigmaE 133.214
+/control/alias muZ 10.3497
+/control/alias sigmaZ 0.0287356
+/control/alias muPz 184.539
+/control/alias sigmaPz 312.268
+
+/control/execute macros/tranche.mac
+
+
+# ==================== TRANCHE 9 ====================
+/control/alias tranche 9
+/control/alias muE 279.625
+/control/alias sigmaE 134.214
+/control/alias muZ 10.4485
+/control/alias sigmaZ 0.0282908
+/control/alias muPz 201.664
+/control/alias sigmaPz 308.515
+
+/control/execute macros/tranche.mac

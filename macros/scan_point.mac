@@ -1,0 +1,5 @@
+# Un point du balayage, appele par scan_generations.mac via /control/foreach.
+/mcp/setMaxGenerations {gen}
+/mcp/setOutputFile scan_gen{gen}.root
+/control/echo --- plafond de generations : {gen}
+/run/beamOn {nEvents}

@@ -1,0 +1,10 @@
+/run/initialize
+/vis/open OGL
+/vis/drawVolume
+/vis/viewer/set/viewpointThetaPhi 90 0 deg
+/vis/viewer/set/targetPoint 0 0.07 0.5 mm
+/vis/viewer/set/style surface
+/vis/scene/add/axes 0 0 0 0.1 mm
+/tracking/storeTrajectory 1
+/vis/scene/add/trajectories
+# Pas d'avalanche au demarrage. Dans la console, lancer /run/beamOn 1 si voulu.

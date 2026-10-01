@@ -1,0 +1,4 @@
+/mcp/setThickness {Thickness} mm
+/mcp/setOutputFile root_files/scanThickness_{Thickness}.root
+/control/echo --- thickness : {Thickness} mm
+/run/beamOn {nEvents}

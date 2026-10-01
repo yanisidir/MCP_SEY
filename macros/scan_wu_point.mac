@@ -1,0 +1,5 @@
+# Un point du balayage de reference. Appele par scan_wu.mac.
+/mcp/setVoltage {voltage} V
+/mcp/setOutputFile root_files/scanWu_{voltage}.root
+/control/echo --- tension : {voltage} V
+/run/beamOn {nEvents}

@@ -1,0 +1,22 @@
+# Modifier ce fichier pour choisir une configuration. Un electron par evenement.
+/run/numberOfThreads 1
+/random/setSeeds 16092026 8213
+/mcp/setPlateDiameter 0.5 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 2000 V
+/mcp/setMaxTracksPerEvent 100000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+/mcp/setOutputFile mcp.root
+/run/initialize
+# Source : sigma nuls = tir fixe. muPz au-dela de p : tir axial +z.
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+/run/printProgress 1
+/run/beamOn 1

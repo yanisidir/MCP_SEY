@@ -1,0 +1,33 @@
+# Balayage gain contre tension, sans plafonnement de la multiplication.
+# Depuis la racine du projet : ./build/MCP_SEY macros/scan_gain.mac
+# Puis : root -l -b -q 'analysis/gain_voltage.C()'
+#
+# Difference avec scan_voltage.mac : transit desactive et plage 700-1400 V.
+# Au-dela de ~1400 V le gain depasse 1e5 et le plafond de tracks mord, ce qui
+# minore le gain ; les impacts individuels a +50 um donneraient par ailleurs
+# une table downstream de plusieurs Go.
+/run/numberOfThreads 10
+/random/setSeeds 16092026 8213
+/mcp/setPlateDiameter 0.5 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 800 V
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+/mcp/setWuModel true
+
+/run/initialize
+# Source : sigma nuls = tir fixe. muPz au-dela de p : tir axial +z.
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+/run/printProgress 50
+
+# Modifier ici le nombre d'injections par tension et la liste des tensions.
+/control/alias nEvents 100
+/control/foreach macros/scan_gain_point.mac voltage "700 800 900 1000 1100 1200 1300 1400"

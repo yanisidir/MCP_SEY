@@ -1,0 +1,45 @@
+# Injection d'electrons tires selon trois lois normales (energie, hauteur z,
+# composante pz), une tranche de profondeur apres l'autre.
+# Depuis la racine : ./build/MCP_SEY macros/scan_tranches.mac
+# Ecrit un fichier tranche_<i>.root par tranche, dans le repertoire courant.
+/run/numberOfThreads 10
+/random/setSeeds 16092026 8213
+/mcp/setPlateDiameter 0.5 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 1000 V
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+/run/initialize
+
+# Les valeurs de muZ sont donnees dans le repere de la simulation amont :
+# zOrigin est la position de la face d'entree de la plaque dans ce repere.
+# Le tirage en z est tronque a l'epaisseur de la plaque, en energie a E>0,
+# et en pz a l'impulsion totale que l'energie impose.
+/source/gauss/zOrigin 9.5 mm
+/control/alias nEvents 100
+
+# Une tranche = sept alias puis un appel. Copier le bloc pour chaque tranche.
+
+# Tranche 0
+/control/alias tranche 0
+/control/alias muE 269.961
+/control/alias sigmaE 138.426
+/control/alias muZ 9.55733
+/control/alias sigmaZ 0.0262282
+/control/alias muPz 177.129
+/control/alias sigmaPz 318.022
+/control/execute macros/tranche.mac
+
+
+
+
+
+
+
+
+
+
+

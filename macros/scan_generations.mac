@@ -1,0 +1,29 @@
+# Balayage du plafond de generations, a geometrie et source fixees.
+# Depuis la racine : ./build/MCP_SEY macros/scan_generations.mac
+# Ecrit un fichier scan_gen<n>.root par valeur, dans le repertoire courant.
+/run/numberOfThreads 1
+/random/setSeeds 16092026 8213
+/mcp/setPlateDiameter 0.5 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 2000 V
+/mcp/setMaxTracksPerEvent 100000
+/mcp/setTransitOutput false
+/run/initialize
+# Source : sigma nuls = tir fixe. muPz au-dela de p : tir axial +z.
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+
+# Nombre d'electrons injectes par point du balayage.
+/control/alias nEvents 200
+
+# Plafonds de generations de vrais secondaires. Les reflexions restent possibles.
+# A 100000 creations, seule la multiplication est bloquee ; le transport finit.
+# Ajouter 0 pour une reference sans limite de generations (mais toujours avec
+# le plafond de creation configure plus haut).
+/control/foreach macros/scan_point.mac gen "20 30 40 50 60"

@@ -1,0 +1,27 @@
+# Balayage en tension : transit dans le MCP et impacts individuels a +50 um.
+# Un electron injecte par evenement ; temps a la face resumes dans events.
+/run/numberOfThreads 10
+/random/setSeeds 16092026 8213
+/mcp/setPlateDiameter 0.5 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 800 V
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput true
+/mcp/setWuModel true
+
+/run/initialize
+# Source : sigma nuls = tir fixe. muPz au-dela de p : tir axial +z.
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+/run/printProgress 1
+
+# Modifier ici le nombre d'injections par tension.
+/control/alias nEvents 200
+/control/foreach macros/scan_voltage_point.mac voltage "800 1000 1200 1400 1600 1800 2000"

@@ -1,0 +1,38 @@
+# Balayage de la longueur du canal a tension fixe.
+# Depuis la racine du projet : ./build/MCP_SEY macros/scan_thickness.mac
+# Puis : root -l -b -q 'analysis/scan_thickness.C()'
+#
+# A tension fixe, allonger le canal augmente le rapport L/D mais diminue le
+# champ V/L, donc l'energie par saut : le gain passe par un maximum.
+# setPlateDiameter doit rester assez grand pour que le pore incline ne sorte
+# pas lateralement du verre : il faut plateDiameter/2 > L*tan(angle) + D/(2cos),
+# soit 0.86 mm a L = 3 mm et 8 degres. Sinon Construct() leve une exception.
+/run/numberOfThreads 10
+/random/setSeeds 24092026 1117
+/mcp/setPlateDiameter 2 mm
+/mcp/setThickness 1 mm
+/mcp/setChannelDiameter 15 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 800 V
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+/mcp/setWuModel true
+
+/run/initialize
+# Source : sigma nuls = tir fixe. muPz au-dela de p : tir axial +z.
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+/run/printProgress 50
+
+# Modifier ici le nombre d'injections et la liste des longueurs.
+# A 800 V l'optimum est vers L = 0.3-0.4 mm (L/D = 20-27). Au-dela de 1.5 mm la
+# tension normalisee V/(L/D) tombe sous 8 V et le gain est rigoureusement nul :
+# ces points ne mesurent rien. Pour explorer les canaux longs, monter la tension
+# proportionnellement a L/D (regle empirique V = 22 x L/D).
+/control/alias nEvents 500
+/control/foreach macros/scan_thickness_point.mac Thickness "0.2 0.3 0.4 0.5 0.7 1 1.5"

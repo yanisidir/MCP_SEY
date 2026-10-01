@@ -1,0 +1,5 @@
+# Un point du balayage, appele par scan_transverse.mac via /control/foreach.
+/mcp/setMaxGenerations {gen}
+/mcp/setOutputFile transverse_gen{gen}.root
+/control/echo --- plafond de generations : {gen}
+/run/beamOn {nEvents}

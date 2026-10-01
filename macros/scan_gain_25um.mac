@@ -1,0 +1,53 @@
+# Balayage en tension pour un canal de 25 um de diametre et 3 mm de long.
+# Depuis la racine du projet : ./build/MCP_SEY macros/scan_gain_25um.mac
+# Puis : root -l -b -q 'analysis/gain_voltage.C("root_files/scanV25_*.root","figures/gain_voltage_25um")'
+#
+# L/D = 120. La tension normalisee V/(L/D) va de 10 V a 1200 V jusqu'a 25.8 V a
+# 3100 V : c'est elle qui fixe l'energie acquise entre deux collisions, donc le
+# rendement par collision. Comme le nombre de collisions vaut ~192 sur 3 mm, le
+# gain croit extremement vite avec la tension. Voir l'en-tete de la liste des
+# tensions pour la limite de faisabilite.
+#
+# plateDiameter doit verifier plateDiameter/2 > L*tan(angle) + D/(2cos),
+# soit 0.868 mm ici ; on prend 2 mm.
+/run/numberOfThreads 10
+/random/setSeeds 24092026 3125
+/mcp/setPlateDiameter 2 mm
+/mcp/setThickness 3 mm
+/mcp/setChannelDiameter 25 um
+/mcp/setChannelAngle 8 deg
+/mcp/setVoltage 1200 V
+/mcp/setMaxTracksPerEvent 1000000
+/mcp/setMaxGenerations 0
+/mcp/setTransitOutput false
+/mcp/setWuModel true
+/run/initialize
+# Source : sigma nuls = tir fixe. muPz au-dela de p : tir axial +z.
+/source/gauss/muE 300 eV
+/source/gauss/sigmaE 0 eV
+/source/gauss/muZ 0 mm
+/source/gauss/sigmaZ 0 mm
+/source/gauss/muPz 1 MeV
+/source/gauss/sigmaPz 0 keV
+/run/printProgress 100
+
+# La FWHM directe du TTS exige au moins 50 avalanches exploitables par point,
+# et 500 pour une barre d'erreur serree.
+#
+# GAMME REALISABLE. Une reconnaissance a 30 injections sur 1200-1600 V donne
+# une pente k = 0.0155 /V, d'ou les gains et les couts extrapolés :
+#     1700 V   3.5e3     1 min        2100 V   1.7e6   167 min
+#     1800 V   1.6e4     5 min        2200 V   8.1e6   167 min
+#     1900 V   7.7e4    26 min        2500 V   8.4e8   167 min
+#     2000 V   3.6e5   121 min        3100 V   9.2e12  167 min
+# Au-dela de 2000 V le plafond de 1e6 tracks sature : le nombre affiche n'est
+# plus un gain mais le plafond lui-meme, et le cout reste bloque a ~3 h par
+# point. De plus le gain y depasse la saturation par charge d'espace d'un pore
+# de 25 um (~2.5e6), que le modele ne connait pas : ces points ne decrivent
+# aucun detecteur reel. La liste s'arrete donc a 2000 V.
+/control/alias nEvents 500
+/control/foreach macros/scan_gain_25um_point.mac voltage "1200 1300 1400 1500 1600 1700 1800 1900"
+
+# Dernier point : statistique reduite, le cout y est domine par le gain.
+/control/alias nEvents 150
+/control/foreach macros/scan_gain_25um_point.mac voltage "2000"

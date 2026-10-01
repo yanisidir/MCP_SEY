@@ -1,0 +1,7 @@
+# Un point du balayage a champ constant. Appele par scan_field.mac apres
+# definition des alias Thickness (mm), Voltage (V) et nEvents.
+/mcp/setThickness {Thickness} mm
+/mcp/setVoltage {Voltage} V
+/mcp/setOutputFile root_files/scanField_{Thickness}mm.root
+/control/echo --- L = {Thickness} mm, V = {Voltage} V
+/run/beamOn {nEvents}

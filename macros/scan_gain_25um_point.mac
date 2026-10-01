@@ -1,0 +1,5 @@
+# Un point du balayage. Appele par scan_gain_25um.mac apres definition de nEvents.
+/mcp/setVoltage {voltage} V
+/mcp/setOutputFile root_files/scanV25_{voltage}.root
+/control/echo --- tension : {voltage} V
+/run/beamOn {nEvents}

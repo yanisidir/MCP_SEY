@@ -1,0 +1,12 @@
+# Une tranche : appelee par scan_tranches.mac ou run_all_tranches.mac, apres
+# definition des alias tranche, muE, sigmaE, muZ, sigmaZ, muPz, sigmaPz
+# (keV, mm, keV/c) et nEvents.
+/source/gauss/muE {muE} keV
+/source/gauss/sigmaE {sigmaE} keV
+/source/gauss/muZ {muZ} mm
+/source/gauss/sigmaZ {sigmaZ} mm
+/source/gauss/muPz {muPz} keV
+/source/gauss/sigmaPz {sigmaPz} keV
+/mcp/setOutputFile tranche_{tranche}.root
+/control/echo --- tranche {tranche} : E={muE}+-{sigmaE} keV, z={muZ}+-{sigmaZ} mm, pz={muPz}+-{sigmaPz} keV/c
+/run/beamOn {nEvents}

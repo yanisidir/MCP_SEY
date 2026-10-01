@@ -1,0 +1,6 @@
+# Un point du balayage en gain. Appele par scan_gain.mac apres definition des alias.
+# setVoltage reconstruit automatiquement la geometrie et les champs.
+/mcp/setVoltage {voltage} V
+/mcp/setOutputFile root_files/scanV_{voltage}.root
+/control/echo --- tension : {voltage} V
+/run/beamOn {nEvents}
