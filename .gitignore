@@ -1,9 +1,47 @@
-# Repertoire de compilation
+# Compilation
 build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+*.o
+*.a
+*.so
 
 # Sorties de simulation
+root_files/
 *.root
 
-# Divers
-*.pyc
+# Sorties d'analyse : figures et tables produites par analysis/*.C
+*.png
+*.pdf
+*.csv
+*.svg
+*.eps
+
+# Produits d'ACLiC (root -l 'macro.C+')
+*_C.so
+*_C.d
+*_C_ACLiC_dict*
+*.pcm
+
+# Journaux et fichiers temporaires
+*.log
+nohup.out
+*.tmp
+*~
+*.swp
+
+# Editeurs et systeme
+.vscode/
+.idea/
+.ipynb_checkpoints/
 __pycache__/
+*.pyc
+.DS_Store
+
+# Si des donnees de reference (courbes digitalisees, mesures) sont un jour
+# ajoutees au depot, les exempter explicitement, par exemple :
+# !data/**/*.csv
