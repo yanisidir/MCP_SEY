@@ -32,14 +32,12 @@ public:
 
     std::vector<G4double> SampleTrueSecondaryEnergies(G4double incidentEnergy, G4int multiplicity) const;
 
-    // Public for analytical validation tools. GenerateEmission uses this same
-    // sampler, so exposing it does not introduce a second angular law.
+    // Publique pour les outils de validation ; GenerateEmission l'utilise aussi.
     G4ThreeVector SampleDiffuseDirection(
         const G4ThreeVector& materialToVacuumNormal) const;
 
-    /// Reflexion speculaire : composante normale inversee, tangentielle
-    /// conservee. Utilisee pour la composante elastique, cf. GenerateEmission.
-    /// La normale est perturbee au prealable si reflectionRoughness est non nul.
+    /// Normale inversee, tangentielle conservee. La normale est perturbee au
+    /// prealable si reflectionRoughness est non nul.
     G4ThreeVector SpecularDirection(
         const G4ThreeVector& incidentDirection,
         const G4ThreeVector& materialToVacuumNormal) const;
@@ -62,8 +60,8 @@ private:
         G4double incidentEnergy,
         G4double incidentAngle) const;
 
-    /// Rendement TOTAL : Peng et al. Eq. (2), ajuste Eq. (8). La composante
-    /// vraie s'en deduit par soustraction dans ComputeYields, Peng Eq. (7).
+    /// Rendement TOTAL, Peng Eq. (2). La composante vraie s'en deduit par
+    /// soustraction dans ComputeYields, interpretation retenue de Peng Eq. (7).
     G4double ComputeTotalYield(
         G4double incidentEnergy,
         G4double incidentAngle) const;

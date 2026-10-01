@@ -24,10 +24,6 @@
 
 namespace VoltageScan {
 
-// ============================================================================
-// 1. TYPES ET CONSTANTES
-// ============================================================================
-
 using EventKey = std::pair<int, int>;
 constexpr int kNumConfigValues = 7;
 
@@ -85,10 +81,6 @@ struct Point {
     std::array<double, kNumConfigValues> config;
 };
 
-// ============================================================================
-// 2. OUTILS DE LECTURE ROOT
-// ============================================================================
-
 static double ReadValue(TTree* tree, const char* name)
 {
     TLeaf* leaf = tree->GetLeaf(name);
@@ -107,10 +99,6 @@ static EventKey ReadEventKey(TTree* tree)
         static_cast<int>(ReadValue(tree, "EventID"))
     };
 }
-
-// ============================================================================
-// 3. VALIDATION DE LA CONFIGURATION
-// ============================================================================
 
 static void ReadConfiguration(
     TTree* configuration,
@@ -157,13 +145,8 @@ static void ReadConfiguration(
     }
 }
 
-// ============================================================================
-// 4. LECTURE D'UN RUN
-// ============================================================================
-
 static Point Read(const std::string& path)
 {
-    // 4.1 Ouvrir le fichier ROOT
     TFile file(path.c_str());
 
     TTree* configuration = file.Get<TTree>("configuration");
@@ -176,15 +159,12 @@ static Point Read(const std::string& path)
         );
     }
 
-    // 4.2 Lire la configuration
     Point point;
     ReadConfiguration(configuration, point, path);
 
-    // 4.3 Structures par evenement
     std::map<EventKey, long> expectedHits;
     std::map<EventKey, Packet> packets;
 
-    // 4.4 Lire l'arbre events
     point.events = events->GetEntries();
 
     for (Long64_t i = 0; i < events->GetEntries(); ++i) {
@@ -216,13 +196,14 @@ static Point Read(const std::string& path)
 
         const double gain = ReadValue(events, "Gain");
 
-        // Toutes les injections sont incluses, y compris gain nul.
+        // Gain moyen sur TOUTES les injections, gain nul compris : c'est la
+        // convention sortie/entree, et non une moyenne conditionnelle.
         point.gain.Add(gain);
 
         const double meanTimePs =
             ReadValue(events, "MeanTime_ns") * 1000.0;
 
-        // Le temps n'est utilise que si le gain est >= 2.
+        // Un barycentre temporel n'a de sens qu'avec au moins deux electrons.
         if (gain >= 2.0) {
             if (!std::isfinite(meanTimePs)) {
                 throw std::runtime_error("Temps non fini : " + path);
@@ -232,7 +213,6 @@ static Point Read(const std::string& path)
         }
     }
 
-    // 4.5 Lire les impacts a +50 um
     for (Long64_t i = 0; i < hits->GetEntries(); ++i) {
         hits->GetEntry(i);
 
@@ -253,7 +233,6 @@ static Point Read(const std::string& path)
         packets[key].y.Add(yUm);
     }
 
-    // 4.6 Construire la largeur radiale de chaque paquet
     for (const auto& item : expectedHits) {
         const EventKey& key = item.first;
         const long expected = item.second;
@@ -266,7 +245,8 @@ static Point Read(const std::string& path)
             );
         }
 
-        // Largeur INTERNE du paquet : denominateur N, barycentre propre au paquet.
+        // Largeur INTERNE au paquet d'un evenement (denominateur N, barycentre
+        // propre au paquet), distincte de la dispersion ENTRE evenements.
         if (n >= 2) {
             const double sigmaR =
                 std::sqrt(
@@ -282,10 +262,6 @@ static Point Read(const std::string& path)
 
     return point;
 }
-
-// ============================================================================
-// 5. CHARGEMENT DE TOUS LES RUNS DU SCAN
-// ============================================================================
 
 static std::vector<Point> LoadScan(const char* motif)
 {
@@ -366,10 +342,6 @@ static std::vector<Point> LoadScan(const char* motif)
     return points;
 }
 
-// ============================================================================
-// 6. EXPORT CSV
-// ============================================================================
-
 static void WriteCSV(
     const std::vector<Point>& points,
     const std::string& figure)
@@ -407,10 +379,6 @@ static void WriteCSV(
             << point.gain.SEM() << '\n';
     }
 }
-
-// ============================================================================
-// 7. RESUME CONSOLE
-// ============================================================================
 
 static void PrintSummary(const std::vector<Point>& points)
 {
@@ -462,10 +430,6 @@ static void PrintSummary(const std::vector<Point>& points)
         << "Poids egal par avalanche ; tous les evenements limites sont inclus. Barres des moyennes : SEM.\n"
         << "nan = indefini. SigmaT n'est pas la largeur temporelle interne d'un paquet.\n";
 }
-
-// ============================================================================
-// 8. OUTILS GRAPHIQUES
-// ============================================================================
 
 static void DrawPanel(
     TCanvas& canvas,
@@ -536,10 +500,6 @@ static void DrawPanel(
         graph->Draw("PL SAME");
     }
 }
-
-// ============================================================================
-// 9. FIGURE COMPLETE
-// ============================================================================
 
 static void DrawPlots(
     const std::vector<Point>& points,
@@ -614,13 +574,8 @@ static void DrawPlots(
 
 } // namespace VoltageScan
 
-// ============================================================================
-// 10. POINT D'ENTREE
-// ============================================================================
-//
-// Depuis MCP_SEY :
+// Usage :
 // root -l -b -q 'analysis/scan_voltage.C("voltage_*.root")'
-//
 void scan_voltage(
     const char* motif = "voltage_*200events.root",
     const char* figure = "scan_voltage")

@@ -4,11 +4,8 @@
 #include "G4VUserTrackInformation.hh"
 #include "G4Track.hh"
 
-// Generation d'emission portee par chaque trajectoire : le primaire injecte
-// vaut 0, ses vrais secondaires valent 1, etc. Les reflexions gardent la
-// generation incidente. Seul FurmanPiviProcess la pose ; le noyau Geant4
-// detruit l'objet avec la trajectoire. EventAction la relit pour l'ecrire
-// dans les tables ROOT.
+// Generation d'emission : 0 pour le primaire, +1 a chaque vrai secondaire.
+// Une reflexion garde la generation incidente.
 class GenerationInfo : public G4VUserTrackInformation {
 public:
     explicit GenerationInfo(G4int generation) : fGeneration(generation) {}

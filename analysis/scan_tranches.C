@@ -31,7 +31,8 @@ struct Tranche {
     double largeur = 0;                               // largeur interne moyenne d'un paquet
 };
 
-// Moyenne, ecart-type (N-1) et leurs erreurs sur un echantillon.
+// Moyenne, ecart-type d'echantillon (N-1) et leurs erreurs standard. Les
+// erreurs supposent des tirages independants et N suffisamment grand.
 struct Echantillon {
     std::vector<double> v;
     long N() const { return static_cast<long>(v.size()); }
@@ -47,7 +48,8 @@ struct Echantillon {
     }
     double ErreurMoyenne() const { return v.size() > 1 ? SD() / std::sqrt(v.size()) : std::nan(""); }
     double ErreurSD() const { return v.size() > 2 ? SD() / std::sqrt(2.0 * (v.size() - 1)) : std::nan(""); }
-    // Demi-largeur 16-84 % : insensible aux queues et sans binning.
+    // Demi-largeur inter-quantiles 16-84 : robuste aux queues et independante
+    // de tout binning. Egale a sigma pour une distribution gaussienne seulement.
     double SDRobuste() const {
         if (v.size() < 10) return std::nan("");
         auto t = v; std::sort(t.begin(), t.end());
@@ -92,7 +94,8 @@ static Tranche LireTranche(const std::string& chemin, int index)
         if (gain == 0) ++tranche.gainNul;
         if (Valeur(evenements, "IsMultiplicationLimited") != 0) ++tranche.limites;
         if (tranche.plafond > 0 && Valeur(evenements, "MaxGeneration") >= tranche.plafond) ++tranche.limGen;
-        // Temps : avalanches avec au moins deux sorties, comme les autres macros.
+        // Un barycentre temporel n'a de sens qu'avec au moins deux electrons en
+        // sortie ; les gains 0 et 1 sont exclus des statistiques de temps.
         const auto bary = Valeur(evenements, "MeanTime_ns") * 1000;
         const auto premier = Valeur(evenements, "FirstTime_ns") * 1000;
         const auto largeur = Valeur(evenements, "TimeSpread_ns") * 1000;
@@ -151,9 +154,10 @@ void scan_tranches(const char* motif = "tranche_*.root", const char* figure = "s
               << "largeur : largeur interne moyenne d'un paquet, a ne pas confondre avec la dispersion\n"
               << "entre evenements ci-dessus.\n"
               << "Le CSV ajoute la demi-largeur 16-84 % de chaque sigma, robuste aux queues.\n"
-              << "ATTENTION : cette macro ne donne que des ECARTS-TYPES. Le TTS, tel que la litterature\n"
-              << "le cite, est une LARGEUR A MI-HAUTEUR : environ 2.355 x sigma si la distribution est\n"
-              << "gaussienne, ce qui n'est pas garanti ici. Pour un vrai TTS, voir gain_voltage.C.\n";
+              << "ATTENTION : cette macro ne donne que des ecarts-types. Le TTS est generalement\n"
+              << "publie en largeur a mi-hauteur, qui ne vaut 2.355 x sigma que pour une\n"
+              << "distribution gaussienne -- hypothese non verifiee ici. Pour une estimation en\n"
+              << "largeur a mi-hauteur, voir gain_voltage.C.\n";
     for (const auto& t : tranches) {
         if (t.temps < 20) printf("Tranche %d : seulement %ld evenements dans les temps.\n", t.index, t.temps);
         if (t.limites > t.evenements / 2)
@@ -177,7 +181,6 @@ void scan_tranches(const char* motif = "tranche_*.root", const char* figure = "s
             << t.dSigmaBary << ',' << t.sigmaBaryRobuste << ',' << t.sigmaPremier << ',' << t.dSigmaPremier << ','
             << t.sigmaPremierRobuste << ',' << t.largeur << '\n';
 
-    // Courbes contre la profondeur d'injection moyenne.
     TCanvas canvas("scan_tranches", "Gain et dispersion par tranche", 1000, 750);
     canvas.Divide(2, 2);
     const int n = static_cast<int>(tranches.size());

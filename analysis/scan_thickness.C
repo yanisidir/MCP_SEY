@@ -20,9 +20,10 @@
 #include <string>
 #include <vector>
 
-// FWHM directe d'un echantillon TRIE : croisement a mi-hauteur de l'histogramme
-// de part et d'autre du maximum, par interpolation lineaire. C'est la definition
-// litterale, la seule comparable aux FWHM publiees.
+// Largeur a mi-hauteur mesuree directement sur l'histogramme d'un echantillon
+// TRIE, par interpolation lineaire de part et d'autre du maximum. La valeur
+// depend du binning (choisi ici en n/8, borne a [10, 60]) et de la position du
+// mode ; elle n'est pas definie pour une distribution multimodale.
 static double FwhmDirecte(const std::vector<double>& trie)
 {
     const long n = static_cast<long>(trie.size());
@@ -49,14 +50,17 @@ static double FwhmDirecte(const std::vector<double>& trie)
     return (std::isfinite(gauche) && std::isfinite(droite)) ? droite - gauche : std::nan("");
 }
 
-// Dispersion ENTRE evenements d'une grandeur par evenement : c'est la
-// definition experimentale du TTS. Trois estimateurs de la largeur a
-// mi-hauteur, qui ne coincident que si la distribution est gaussienne.
+// Dispersion ENTRE evenements du barycentre temporel, a distinguer de la
+// dispersion INTERNE a un evenement (TimeSpread_ns dans les tables ROOT).
+// Le TTS est ici exprime en largeur a mi-hauteur, convention retenue dans cette
+// analyse parce que c'est la forme la plus souvent publiee. Trois estimateurs
+// en sont fournis ; ils ne coincident que si la distribution est gaussienne.
 struct Dispersion {
     long n = 0;
     double sigma = std::nan(""), dSigma = std::nan("");
-    double fwhmGauss = std::nan("");                        // 2.355 x sigma
-    double fwhmRobuste = std::nan("");                      // 1.1774 x (q84 - q16)
+    double fwhmGauss = std::nan("");    // FWHM equivalente gaussienne, 2.3548 x sigma
+    double fwhmRobuste = std::nan("");  // largeur inter-quantiles 16-84 convertie en
+                                        // FWHM equivalente gaussienne, 1.1774 x (q84-q16)
     double fwhmDirect = std::nan(""), dFwhmDirect = std::nan("");
 };
 
@@ -85,8 +89,10 @@ static Dispersion Disperser(std::vector<double> v)
     if (d.n >= 10) d.fwhmRobuste = 1.1774 * (quantile(0.84) - quantile(0.16));
 
     d.fwhmDirect = FwhmDirecte(v);
-    // La FWHM directe n'a pas d'erreur analytique : on la tire par bootstrap,
-    // graine fixe pour que la figure soit reproductible.
+    // Pas d'erreur analytique sur cet estimateur : incertitude estimee par
+    // bootstrap (200 retirages avec remise, graine fixe pour reproductibilite).
+    // Elle ne couvre que la fluctuation d'echantillonnage, pas le biais de
+    // binning.
     if (std::isfinite(d.fwhmDirect)) {
         TRandom3 alea(12345);
         std::vector<double> tirage(v.size()), mesures;
@@ -118,9 +124,10 @@ struct Point {
     double gain = 0, dGain = 0;       // moyenne sur tous les evenements, gain nul compris
     double transit = 0, dTransit = 0; // barycentre a la face du MCP
     double largeur = 0, dLargeur = 0; // largeur interne moyenne d'un paquet
-    Dispersion tts;                   // dispersion ENTRE evenements du barycentre
+    Dispersion dispersion;            // dispersion ENTRE evenements du barycentre :
+                                      // sigma et les trois estimateurs de largeur
 
-    double dFwhmDirect() const { return tts.dFwhmDirect; }
+    double dFwhmDirect() const { return dispersion.dFwhmDirect; }
 
     double Alpha() const { return diametre > 0 ? epaisseur * 1000.0 / diametre : 0; }
     double Normalisee() const { return Alpha() > 0 ? tension / Alpha() : 0; }
@@ -162,7 +169,8 @@ static Point LirePoint(const std::string& chemin)
         if (gain == 0) ++point.gainNul;
         if (Valeur(evenements, "IsMultiplicationLimited") != 0) ++point.limites;
         if (point.plafond > 0 && Valeur(evenements, "MaxGeneration") >= point.plafond) ++point.limGen;
-        // Temps : avalanches avec au moins deux sorties, comme les autres macros.
+        // Un barycentre temporel n'a de sens qu'avec au moins deux electrons
+        // en sortie ; les gains 0 et 1 sont donc exclus des statistiques de temps.
         const double transit = Valeur(evenements, "MeanTime_ns") * 1000;
         const double largeur = Valeur(evenements, "TimeSpread_ns") * 1000;
         if (gain < 2 || !std::isfinite(transit) || !std::isfinite(largeur)) continue;
@@ -183,7 +191,7 @@ static Point LirePoint(const std::string& chemin)
     resume(sg, sg2, point.evenements, point.gain, point.dGain);
     resume(st, st2, point.temps, point.transit, point.dTransit);
     resume(sl, sl2, point.temps, point.largeur, point.dLargeur);
-    point.tts = Disperser(barycentres);
+    point.dispersion = Disperser(barycentres);
     return point;
 }
 
@@ -214,9 +222,8 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
     std::sort(points.begin(), points.end(),
               [](const Point& a, const Point& b) { return a.epaisseur < b.epaisseur; });
 
-    // Deux balayages ont un sens : a tension constante (le champ V/L baisse,
-    // le gain passe par un optimum) ou a champ constant (le gain croit
-    // exponentiellement avec L). On detecte lequel pour l'annoncer.
+    // Deux balayages ont un sens : a tension constante (optimum) ou a champ
+    // constant (croissance exponentielle). On detecte lequel.
     const auto constant = [&points](double (*v)(const Point&)) {
         return std::all_of(points.begin(), points.end(), [&](const Point& p) {
             return std::abs(v(p) - v(points.front())) <= 1e-6 * std::max(1.0, std::abs(v(points.front())));
@@ -243,8 +250,8 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
         printf("%8.2f %8.1f %9.1f %7ld %8.1f %9.1f %7ld %8.4g+-%-6.3g %6.1f+-%-5.1f %10.1f %11.1f %11.1f %8.1f+-%-4.1f\n",
                p.epaisseur, p.Alpha(), p.Normalisee(), p.evenements,
                100.0 * p.gainNul / p.evenements, 100.0 * p.limites / p.evenements, p.temps,
-               p.gain, p.dGain, p.transit, p.dTransit, p.tts.sigma,
-               p.tts.fwhmGauss, p.tts.fwhmRobuste, p.tts.fwhmDirect, p.tts.dFwhmDirect);
+               p.gain, p.dGain, p.transit, p.dTransit, p.dispersion.sigma,
+               p.dispersion.fwhmGauss, p.dispersion.fwhmRobuste, p.dispersion.fwhmDirect, p.dispersion.dFwhmDirect);
     }
     for (const auto& p : points) {
         if (p.limites > p.evenements / 20)
@@ -273,11 +280,10 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
         csv << p.epaisseur << ',' << p.diametre << ',' << p.Alpha() << ',' << p.tension << ','
             << p.Normalisee() << ',' << p.evenements << ',' << p.gainNul << ',' << p.limites << ','
             << p.limGen << ',' << p.temps << ',' << p.gain << ',' << p.dGain << ',' << p.transit
-            << ',' << p.dTransit << ',' << p.tts.sigma << ',' << p.tts.dSigma << ','
-            << p.tts.fwhmGauss << ',' << p.tts.fwhmRobuste << ',' << p.tts.fwhmDirect << ','
+            << ',' << p.dTransit << ',' << p.dispersion.sigma << ',' << p.dispersion.dSigma << ','
+            << p.dispersion.fwhmGauss << ',' << p.dispersion.fwhmRobuste << ',' << p.dispersion.fwhmDirect << ','
             << p.largeur << ',' << p.dLargeur << '\n';
 
-    // Courbes contre la longueur du canal.
     TCanvas canvas("scan_thickness", "Gain et temps contre la longueur du canal", 1000, 750);
     canvas.Divide(2, 2);
     const auto graphe = [&points](double (*valeur)(const Point&), double (*erreur)(const Point&),
@@ -294,9 +300,8 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
         return g;
     };
 
-    // 1 : gain, echelle logarithmique. Un optimum est attendu : allonger le canal
-    // augmente le nombre de collisions mais diminue le champ V/L, donc l'energie
-    // par saut.
+    // Un optimum est attendu : allonger le canal augmente le nombre de
+    // collisions mais diminue le champ V/L, donc l'energie par saut.
     canvas.cd(1);
     gPad->SetLogy();
     auto* gGain = graphe([](const Point& p) { return std::max(1e-3, p.gain); },
@@ -312,7 +317,6 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
                         : Form("V = %.0f V, D = %.1f #mum", points.front().tension,
                                points.front().diametre));
 
-    // 2 : etat des evenements.
     canvas.cd(2);
     auto* gZero = graphe([](const Point& p) { return 100.0 * p.gainNul / p.evenements; }, nullptr, 20);
     auto* gLim = graphe([](const Point& p) { return 100.0 * p.limites / p.evenements; }, nullptr, 24);
@@ -327,17 +331,16 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
     legende->AddEntry(gLim, "plafond de tracks atteint", "pl");
     legende->Draw();
 
-    // 3 : temps de transit moyen a la face du MCP.
     canvas.cd(3);
     auto* gT = graphe([](const Point& p) { return p.transit; },
                       [](const Point& p) { return p.dTransit; }, 20);
     gT->SetTitle("Temps de transit (barycentre);Longueur du canal L (mm);Temps (ps)");
     gT->Draw("APL");
 
-    // 4 : dispersion temporelle. TTS entre evenements et largeur interne du paquet,
-    // qui ne mesurent pas la meme chose.
+    // TTS, estime par la largeur a mi-hauteur mesuree sur l'histogramme, et
+    // largeur interne du paquet : deux populations differentes.
     canvas.cd(4);
-    auto* gTTS = graphe([](const Point& p) { return p.tts.fwhmDirect; },
+    auto* gTTS = graphe([](const Point& p) { return p.dispersion.fwhmDirect; },
                         [](const Point& p) { return p.dFwhmDirect(); }, 20);
     gTTS->SetTitle("TTS (largeur a mi-hauteur);Longueur du canal L (mm);FWHM (ps)");
     gTTS->Draw("APL");
@@ -349,9 +352,10 @@ void scan_thickness(const char* motif = "root_files/scanField_*.root",
               << "L/D : rapport longueur sur diametre. V/(L/D) : tension normalisee, le parametre\n"
               << "qui fixe l'energie acquise entre deux collisions.\n"
               << "Temps en ps depuis l'injection, evenements avec gain>=2, mesures a la face du MCP.\n"
-              << "sigma : ecart-type ENTRE evenements du barycentre, a ne pas confondre avec la\n"
-              << "largeur interne d'un paquet.\n"
-              << "TTS : la LARGEUR A MI-HAUTEUR de cette dispersion, seule grandeur comparable aux\n"
-              << "valeurs publiees. Trois estimateurs, dont la divergence signale une distribution\n"
-              << "non gaussienne.\n";
+              << "sigma : ecart-type ENTRE evenements du barycentre temporel, a ne pas confondre\n"
+              << "avec la largeur interne d'un paquet, qui porte sur les electrons d'un meme\n"
+              << "evenement.\n"
+              << "TTS : exprime ici en largeur a mi-hauteur. Trois estimateurs non equivalents\n"
+              << "(FWHM equivalente gaussienne, inter-quantiles 16-84 convertie, mesure directe sur\n"
+              << "l'histogramme) ; un ecart entre eux suggere une distribution non gaussienne.\n";
 }

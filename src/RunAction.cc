@@ -36,8 +36,6 @@ RunAction::RunAction(const DetectorConstruction* detector, const GaussianSource*
     analysisManager->CreateNtupleIColumn("MaxGeneration");
     analysisManager->CreateNtupleDColumn("NCreatedTracks");
     analysisManager->CreateNtupleIColumn("NAt50um");
-    // Impacts sur la paroi, moyennes par evenement. Les spectres complets sont
-    // dans les histogrammes ci-dessous.
     analysisManager->CreateNtupleDColumn("NImpacts");
     analysisManager->CreateNtupleDColumn("MeanImpactEnergy_eV");
     analysisManager->CreateNtupleDColumn("MeanImpactAngle_deg");
@@ -73,12 +71,9 @@ RunAction::RunAction(const DetectorConstruction* detector, const GaussianSource*
     analysisManager->CreateNtupleDColumn("DriftDistance_um");
     analysisManager->CreateNtupleIColumn("FieldOnlyInPore");
     analysisManager->CreateNtupleIColumn("ScoringAtPlateFace");
-    // Modele d'emission : 1 = Wu et al. 2008, 0 = Furman-Pivi / Peng. Sans
-    // cette colonne, deux fichiers issus de physiques differentes seraient
-    // indiscernables. Son absence signale un fichier anterieur a octobre 2026,
-    // donc produit avec Furman-Pivi / Peng.
+    // 1 = Wu, 0 = Furman-Pivi / Peng. Absente des fichiers anterieurs a
+    // octobre 2026, produits avec Furman-Pivi / Peng.
     analysisManager->CreateNtupleIColumn("EmissionModel");
-    // Source : les trois lois normales du run, dans le repere de la plaque.
     analysisManager->CreateNtupleDColumn("SourceMuE_keV");
     analysisManager->CreateNtupleDColumn("SourceSigmaE_keV");
     analysisManager->CreateNtupleDColumn("SourceMuZ_mm");
@@ -87,9 +82,7 @@ RunAction::RunAction(const DetectorConstruction* detector, const GaussianSource*
     analysisManager->CreateNtupleDColumn("SourceSigmaPz_keV");
     analysisManager->FinishNtuple();
 
-    // Spectres d'impact sur la paroi, cumules sur le run et fusionnes entre
-    // threads. L'energie d'impact fixe la pente du gain : k = dln(delta)/dE
-    // evaluee a cette energie.
+    // Spectres d'impact, cumules sur le run et fusionnes entre threads.
     analysisManager->CreateH1("impactEnergy",
         "Energie d'impact sur la paroi (eV)", 400, 0., 400.);
     analysisManager->CreateH1("impactAngle",
@@ -97,15 +90,10 @@ RunAction::RunAction(const DetectorConstruction* detector, const GaussianSource*
 }
 
 namespace {
-// G4AnalysisManager::OpenFile renvoie true meme lorsque l'ouverture echoue :
-// l'erreur ne se manifeste alors que bien plus tard, par une faute de
-// segmentation, sans rapport apparent avec sa cause. Le chemin de sortie est
-// donc verifie ici, AVANT l'ouverture, pour que le probleme soit signale a
-// l'endroit ou il se produit.
-//
-// Appelee par chaque fil : create_directories est idempotente et sa variante
-// a code d'erreur ne leve pas d'exception si un autre fil cree le dossier
-// entre le test et l'appel.
+// G4AnalysisManager::OpenFile renvoie true meme quand l'ouverture echoue ; le
+// programme mourait alors bien plus loin, par une faute de segmentation. Le
+// chemin est donc verifie avant. Appelee par chaque fil : create_directories
+// est idempotente et sa variante a code d'erreur tolere la course.
 void PreparerDossierDeSortie(const G4String& sortie)
 {
     const std::filesystem::path chemin(sortie.c_str());
@@ -163,7 +151,7 @@ void RunAction::EndOfRunAction(const G4Run* run)
 {
     auto* analysisManager = G4AnalysisManager::Instance();
 
-    // Une seule ligne de configuration, ecrite par le worker 0 (ou en serie).
+    // Une seule ligne, ecrite par le worker 0 (ou en serie).
     if (G4Threading::G4GetThreadId() == 0 || !G4Threading::IsMultithreadedApplication()) {
         constexpr G4int table = 2;
         analysisManager->FillNtupleIColumn(table, 0, run->GetRunID());

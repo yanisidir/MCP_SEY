@@ -31,8 +31,8 @@
 /source/gauss/sigmaPz 0 keV
 /run/printProgress 100
 
-# La FWHM directe du TTS exige au moins 50 avalanches exploitables par point,
-# et 500 pour une barre d'erreur serree.
+# Le TTS, estime par croisement direct a mi-hauteur, exige au moins 50 avalanches
+# exploitables par point, et 500 pour une barre d'erreur serree.
 #
 # GAMME REALISABLE. Une reconnaissance a 30 injections sur 1200-1600 V donne
 # une pente k = 0.0155 /V, d'ou les gains et les couts extrapolés :

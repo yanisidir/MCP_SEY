@@ -20,9 +20,8 @@ void ActionInitialization::BuildForMaster() const
 
 void ActionInitialization::Build() const
 {
-    // EventAction porte les compteurs de l'avalanche : TrackingAction,
-    // SteppingAction et FurmanPiviProcess ecrivent tous dans cette instance,
-    // propre au thread courant.
+    // Instance propre au thread : TrackingAction, SteppingAction et
+    // FurmanPiviProcess ecrivent tous dedans.
     auto* eventAction = new EventAction(fDetector);
 
     SetUserAction(new PrimaryGeneratorAction(fDetector, fSource));

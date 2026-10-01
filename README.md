@@ -120,8 +120,11 @@ For a parameter scan, see the pair `macros/scan_wu.mac` and
 
 Plus two histograms, `impactEnergy` and `impactAngle`.
 
-The column you want is `Gain`. `MeanTime_ns` is the time centroid of the
-output bunch; its spread **between events** is the TTS.
+The column you want is `Gain`. `MeanTime_ns` is the time centroid of the output
+bunch. Its spread **between events** is what the TTS is built from: the TTS
+itself is the **full width at half maximum** of that spread, not its standard
+deviation. Analysis macros report both, under distinct names — `sigma` for the
+standard deviation, `TTS` only for a FWHM.
 
 > `TimeSpread_ns` is the internal width of the bunch
 > within a single event.

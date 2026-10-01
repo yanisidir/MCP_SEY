@@ -27,7 +27,8 @@ struct PointBalayage {
     double premier = 0, dPremier = 0, moyen = 0, dMoyen = 0, largeur = 0, dLargeur = 0;
 };
 
-// Moyenne et erreur sur la moyenne d'un echantillon deja accumule.
+// Moyenne et erreur standard sur la moyenne, a partir des sommes accumulees.
+// L'erreur suppose des evenements independants.
 static void Resume(double somme, double somme2, long n, double& moyenne, double& erreur)
 {
     if (n <= 0) { moyenne = erreur = 0; return; }
@@ -77,7 +78,8 @@ static PointBalayage LirePoint(const std::string& chemin)
         ++acheves;
         sommeGain += gain;
         sommeGeneration += generation;
-        // Temps conditionnes a une multiplication en sortie.
+        // Temps conditionnes a au moins deux electrons en sortie : en deca, un
+        // barycentre temporel n'est pas defini.
         if (gain < 2 || !std::isfinite(premier) || !std::isfinite(moyen)
             || !std::isfinite(largeur)) continue;
         ++point.utilises;
@@ -90,8 +92,8 @@ static PointBalayage LirePoint(const std::string& chemin)
     Resume(s1, s1b, point.utilises, point.premier, point.dPremier);
     Resume(s2, s2b, point.utilises, point.moyen, point.dMoyen);
     Resume(s3, s3b, point.utilises, point.largeur, point.dLargeur);
-    // Ecart-type inter-evenements (denominateur N-1), pas erreur sur la moyenne.
-    // Resume fournit SEM = s / sqrt(N). Un seul evenement ne definit pas s.
+    // Ecart-type ENTRE evenements (denominateur N-1), a ne pas confondre avec
+    // l'erreur sur la moyenne que Resume renvoie (SEM = s / sqrt(N)).
     const double nan = std::numeric_limits<double>::quiet_NaN();
     point.sigmaPremier = point.utilises > 1 ? point.dPremier * std::sqrt(point.utilises) : nan;
     point.sigmaMoyen = point.utilises > 1 ? point.dMoyen * std::sqrt(point.utilises) : nan;
@@ -170,7 +172,6 @@ void scan_generations(const char* motif = "scan_gen*.root", const char* figure =
     canvas.Divide(2, 2);
     const int n = static_cast<int>(points.size());
 
-    // Une courbe par grandeur, tracee contre le plafond de generations.
     auto construire = [&](double (*valeur)(const PointBalayage&), double (*erreur)(const PointBalayage&)) {
         auto* graphe = new TGraphErrors();
         int j = 0;

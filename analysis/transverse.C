@@ -24,11 +24,6 @@
 #include <utility>
 #include <vector>
 
-
-// ============================================================================
-// 1. TYPES ET CONSTANTES
-// ============================================================================
-
 // Toutes les positions de cette analyse sont en um,
 // les energies sont en eV.
 
@@ -38,7 +33,6 @@ constexpr double kMapRadiusUm = 150.0;
 
 // Fraction des electrons d'une avalanche contenue dans le rayon R80.
 constexpr double kContainmentFraction = 0.80;
-
 
 // Statistiques d'une avalanche sur un plan donne.
 struct Spot {
@@ -55,7 +49,6 @@ struct Spot {
     // Positions conservees pour le rayon de confinement, qui exige
     // le centroide final : il n'a pas de forme incrementale.
     std::vector<std::pair<double, double>> points;
-
 
     void Add(
         double px,
@@ -77,7 +70,6 @@ struct Spot {
         energy += (e - energy) / n;
     }
 
-
     double Sx() const
     {
         return n
@@ -89,7 +81,6 @@ struct Spot {
             )
             : 0.0;
     }
-
 
     double Sy() const
     {
@@ -103,7 +94,6 @@ struct Spot {
             : 0.0;
     }
 
-
     double Sr() const
     {
         return std::hypot(
@@ -112,10 +102,10 @@ struct Spot {
         );
     }
 
-
-    // Rayon du cercle centre sur le centroide qui contient la fraction
-    // demandee des electrons : distance du k-ieme plus proche, k = ceil(f*n).
-    // Insensible a la queue de la distribution, contrairement a sigma_r.
+    // Rayon du cercle centre sur le centroide contenant la fraction demandee
+    // des electrons : distance du k-ieme plus proche, k = ceil(f*n). Estimateur
+    // d'ordre, donc peu sensible aux queues, contrairement a sigma_r. Il n'y est
+    // relie que pour une distribution donnee (R80 = 1.79 sigma si gaussienne 2D).
     double ContainmentRadius(
         double fraction) const
     {
@@ -153,17 +143,11 @@ struct Spot {
         return distances[k - 1];
     }
 
-
     double R80() const
     {
         return ContainmentRadius(kContainmentFraction);
     }
 };
-
-
-// ============================================================================
-// 2. OUTILS DE LECTURE ROOT
-// ============================================================================
 
 static double ReadValue(
     TTree* tree,
@@ -180,7 +164,6 @@ static double ReadValue(
     return leaf->GetValue();
 }
 
-
 static EventKey ReadEventKey(
     TTree* tree)
 {
@@ -193,11 +176,6 @@ static EventKey ReadEventKey(
         )
     };
 }
-
-
-// ============================================================================
-// 3. LECTURE ET AGRÉGATION DES AVALANCHES
-// ============================================================================
 
 static std::map<EventKey, std::array<Spot, 2>>
 BuildSpots(
@@ -248,11 +226,6 @@ BuildSpots(
     return spots;
 }
 
-
-// ============================================================================
-// 4. CALCUL DES BORNES ET SELECTION DES AVALANCHES
-// ============================================================================
-
 struct PlotRanges {
     long selected = 0;
 
@@ -269,7 +242,6 @@ struct PlotRanges {
     long outsideMap = 0;
 };
 
-
 static PlotRanges ComputeRanges(
     const std::map<EventKey, std::array<Spot, 2>>& spots,
     TTree* exit,
@@ -277,16 +249,13 @@ static PlotRanges ComputeRanges(
 {
     PlotRanges ranges;
 
-    // ------------------------------------------------------------------------
-    // 4.1 Selection des avalanches et bornes sur les barycentres / largeurs
-    // ------------------------------------------------------------------------
-
     for (const auto& entry : spots) {
         const Spot& faceMCP = entry.second[0];
         const Spot& plane50 = entry.second[1];
 
-        // On ne garde que les avalanches ayant au moins
-        // 2 electrons dans chacun des deux plans.
+        // Une largeur radiale n'est definie qu'a partir de deux electrons : les
+        // avalanches en comptant moins dans l'un des plans sont ecartees. Cette
+        // selection biaise l'echantillon vers les gains eleves a basse tension.
         if (faceMCP.n < 2 || plane50.n < 2) {
             continue;
         }
@@ -344,14 +313,6 @@ static PlotRanges ComputeRanges(
             "deux electrons aux deux plans."
         );
     }
-
-
-    // ------------------------------------------------------------------------
-    // 4.2 Deuxieme lecture des electrons :
-    //     - rayon necessaire pour la carte de sortie
-    //     - energie maximale
-    //     - nombre d'impacts hors du zoom a +50 um
-    // ------------------------------------------------------------------------
 
     const std::array<TTree*, 2> tables = {
         exit,
@@ -425,8 +386,6 @@ static PlotRanges ComputeRanges(
         }
     }
 
-
-    // Petite marge visuelle.
     ranges.exitRadius   *= 1.05;
     ranges.energyMax    *= 1.05;
     ranges.sigmaMax     *= 1.05;
@@ -434,11 +393,6 @@ static PlotRanges ComputeRanges(
 
     return ranges;
 }
-
-
-// ============================================================================
-// 5. EXPORT CSV
-// ============================================================================
 
 static void WriteCSV(
     const std::string& figure,
@@ -509,11 +463,6 @@ static void WriteCSV(
     }
 }
 
-
-// ============================================================================
-// 6. HISTOGRAMMES
-// ============================================================================
-
 struct Histograms {
     TH2D xy0;
     TH2D xy50;
@@ -528,7 +477,6 @@ struct Histograms {
     TH1D e50;
 
     TH1D growth;
-
 
     Histograms(
         const PlotRanges& ranges)
@@ -636,7 +584,6 @@ struct Histograms {
     {}
 };
 
-
 static void DisableStats(
     Histograms& h)
 {
@@ -657,18 +604,12 @@ static void DisableStats(
     }
 }
 
-
-// ============================================================================
-// 7. REMPLISSAGE DES HISTOGRAMMES
-// ============================================================================
-
 struct MeanWidths {
     double sumExit = 0.0;
     double sum50 = 0.0;
     double sumR80Exit = 0.0;
     double sumR8050 = 0.0;
 };
-
 
 static MeanWidths FillAvalancheHistograms(
     Histograms& h,
@@ -726,7 +667,6 @@ static MeanWidths FillAvalancheHistograms(
 
     return sums;
 }
-
 
 static void FillElectronHistograms(
     Histograms& h,
@@ -803,11 +743,6 @@ static void FillElectronHistograms(
     }
 }
 
-
-// ============================================================================
-// 8. RESUME CONSOLE
-// ============================================================================
-
 static void PrintSummary(
     TTree* exit,
     TTree* downstream,
@@ -821,11 +756,6 @@ static void PrintSummary(
     printf("%-8s %10.4g %10.4g\n", "sigma_r", sums.sumExit / n, sums.sum50 / n);
     printf("%-8s %10.4g %10.4g\n", "R80", sums.sumR80Exit / n, sums.sumR8050 / n);
 }
-
-
-// ============================================================================
-// 9. AFFICHAGE
-// ============================================================================
 
 static void DrawCanvas(
     Histograms& h,
@@ -843,11 +773,6 @@ static void DrawCanvas(
         2
     );
 
-
-    // ------------------------------------------------------------------------
-    // 9.1 Mise en page commune
-    // ------------------------------------------------------------------------
-
     for (int pad = 1;
          pad <= 6;
          ++pad) {
@@ -858,21 +783,11 @@ static void DrawCanvas(
         gPad->SetRightMargin(0.14);
     }
 
-
-    // ------------------------------------------------------------------------
-    // 9.2 Carte des impacts a la face MCP
-    // ------------------------------------------------------------------------
-
     canvas.cd(1);
 
     h.xy0.Draw(
         "COLZ"
     );
-
-
-    // ------------------------------------------------------------------------
-    // 9.3 Carte des impacts a +50 um
-    // ------------------------------------------------------------------------
 
     canvas.cd(2);
 
@@ -881,11 +796,6 @@ static void DrawCanvas(
     h.xy50.Draw(
         "COLZ"
     );
-
-
-    // ------------------------------------------------------------------------
-    // 9.4 Distribution des largeurs radiales
-    // ------------------------------------------------------------------------
 
     canvas.cd(3);
 
@@ -969,21 +879,11 @@ static void DrawCanvas(
 
     widthLegend.Draw();
 
-
-    // ------------------------------------------------------------------------
-    // 9.5 Carte des barycentres a +50 um
-    // ------------------------------------------------------------------------
-
     canvas.cd(4);
 
     h.bary.Draw(
         "COLZ"
     );
-
-
-    // ------------------------------------------------------------------------
-    // 9.6 Spectres d'energie
-    // ------------------------------------------------------------------------
 
     canvas.cd(5);
 
@@ -1031,19 +931,9 @@ static void DrawCanvas(
 
     energyLegend.Draw();
 
-
-    // ------------------------------------------------------------------------
-    // 9.7 Variation de largeur
-    // ------------------------------------------------------------------------
-
     canvas.cd(6);
 
     h.growth.Draw();
-
-
-    // ------------------------------------------------------------------------
-    // 9.8 Sauvegarde
-    // ------------------------------------------------------------------------
 
     canvas.SaveAs(
         (figure + ".png").c_str()
@@ -1054,23 +944,13 @@ static void DrawCanvas(
     );
 }
 
-
-// ============================================================================
-// 10. POINT D'ENTREE
-// ============================================================================
-//
-// Exemple :
+// Usage :
 // root -l -b -q 'analysis/transverse.C("transverse_gen50.root")'
-//
 void transverse(
     const char* fichier = "transverse_gen50.root",
     const char* figure = "transverse")
 {
     gErrorIgnoreLevel = kWarning;
-
-    // ------------------------------------------------------------------------
-    // 10.1 Ouvrir le fichier ROOT
-    // ------------------------------------------------------------------------
 
     TFile file(
         fichier
@@ -1127,21 +1007,11 @@ void transverse(
         );
     }
 
-
-    // ------------------------------------------------------------------------
-    // 10.2 Construire les statistiques par avalanche
-    // ------------------------------------------------------------------------
-
     const auto spots =
         BuildSpots(
             exit,
             downstream
         );
-
-
-    // ------------------------------------------------------------------------
-    // 10.3 Calculer les bornes necessaires aux histogrammes
-    // ------------------------------------------------------------------------
 
     const PlotRanges ranges =
         ComputeRanges(
@@ -1149,11 +1019,6 @@ void transverse(
             exit,
             downstream
         );
-
-
-    // ------------------------------------------------------------------------
-    // 10.4 Creer les histogrammes
-    // ------------------------------------------------------------------------
 
     Histograms histograms(
         ranges
@@ -1163,20 +1028,10 @@ void transverse(
         histograms
     );
 
-
-    // ------------------------------------------------------------------------
-    // 10.5 Exporter les statistiques par avalanche
-    // ------------------------------------------------------------------------
-
     WriteCSV(
         figure,
         spots
     );
-
-
-    // ------------------------------------------------------------------------
-    // 10.6 Remplir les histogrammes
-    // ------------------------------------------------------------------------
 
     const MeanWidths meanWidths =
         FillAvalancheHistograms(
@@ -1191,11 +1046,6 @@ void transverse(
         downstream
     );
 
-
-    // ------------------------------------------------------------------------
-    // 10.7 Afficher le resume
-    // ------------------------------------------------------------------------
-
     PrintSummary(
         exit,
         downstream,
@@ -1203,16 +1053,10 @@ void transverse(
         meanWidths
     );
 
-
-    // ------------------------------------------------------------------------
-    // 10.8 Dessiner et sauvegarder les figures
-    // ------------------------------------------------------------------------
-
     DrawCanvas(
         histograms,
         figure
     );
 }
-
 
 #endif

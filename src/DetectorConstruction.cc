@@ -41,16 +41,12 @@ DetectorConstruction::DetectorConstruction()
         .SetToBeBroadcasted(false); // Parametre partage, modifie seulement par le master.
     fMessenger->DeclareProperty("setOutputFile", fOutput).SetStates(G4State_PreInit, G4State_Idle);
     fMessenger->DeclareProperty("setTransitOutput", fSaveExits).SetStates(G4State_PreInit);
-    // Choix du modele d'emission secondaire. Le processus lit ce drapeau une
-    // fois par impact, il peut donc changer entre deux runs.
     fMessenger->DeclareProperty("setWuModel", fUseWuModel)
         .SetGuidance("true : modele de Wu et al. 2008 (defaut) ; false : Furman-Pivi/Peng.")
         .SetStates(G4State_PreInit, G4State_Idle);
     fMessenger->DeclareProperty("setMaxTracksPerEvent", fMaxTracks)
         .SetParameterName("n", false).SetRange("n>=0").SetStates(G4State_PreInit);
-    // Plafond de generations de vrais secondaires ; les reflexions restent autorisees.
-    // Relu a chaque impact : modifiable entre deux runs, pour balayer la limite
-    // sans relancer l'executable.
+    // Plafonne les vrais secondaires ; les reflexions restent autorisees.
     fMessenger->DeclareProperty("setMaxGenerations", fMaxGenerations)
         .SetParameterName("n", false).SetRange("n>=0").SetStates(G4State_PreInit, G4State_Idle);
 }
@@ -60,10 +56,8 @@ void DetectorConstruction::SetThickness(G4double thickness)
 {
     if (thickness == fThickness) return;
     fThickness = thickness;
-    // Entre deux runs, reconstruire la geometrie : l'epaisseur redimensionne
-    // le monde, la plaque, le pore et le volume de derive, et le champ V/L
-    // en depend. destroyFirst nettoie les stores pour ne pas accumuler les
-    // solides des runs precedents.
+    // L'epaisseur redimensionne tous les volumes et change le champ V/L.
+    // destroyFirst evite d'accumuler les solides des runs precedents.
     if (G4StateManager::GetStateManager()->GetCurrentState() == G4State_Idle)
         G4RunManager::GetRunManager()->ReinitializeGeometry(true);
 }
@@ -72,7 +66,6 @@ void DetectorConstruction::SetVoltage(G4double voltage)
 {
     if (voltage == fVoltage) return;
     fVoltage = voltage;
-    // Entre deux runs, reconstruire aussi les champs locaux de tous les workers.
     // Changer seulement fVoltage laisserait l'ancien champ dans le transport.
     if (G4StateManager::GetStateManager()->GetCurrentState() == G4State_Idle)
         G4RunManager::GetRunManager()->ReinitializeGeometry();

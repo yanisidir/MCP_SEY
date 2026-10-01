@@ -36,8 +36,8 @@ G4ThreeVector EmissionPosition(const G4Step& step, const G4ThreeVector& normal, 
         const auto position = impact + distance*normal;
         if (inside(position)) return position;
     }
-    // Au bord d'une face, reduire le decalage peut ne pas suffire. Reculer
-    // aussi vers le point precedent, au maximum de 8 offsets (8 nm ici).
+    // Au bord d'une face, reduire le decalage ne suffit pas toujours : reculer
+    // aussi vers le point precedent.
     const auto displacement = pre->GetPosition()-impact;
     const auto back = displacement.unit();
     for (int factor : {1,2,4,8}) {
@@ -135,8 +135,7 @@ G4VParticleChange* FurmanPiviProcess::PostStepDoIt(const G4Track& track, const G
 
     auto* event = const_cast<EventAction*>(static_cast<const EventAction*>(
         G4RunManager::GetRunManager()->GetUserEventAction()));
-    // Instrumentation : tous les impacts sur la paroi sont comptes, y compris
-    // ceux qui n'emettront rien. Aucun effet sur ce qui suit.
+    // Compte aussi les impacts qui n'emettront rien. Aucun tirage consomme.
     event->RecordImpact(energy, angle);
 
     const auto emission = fDetector->UseWuModel()
@@ -169,8 +168,7 @@ G4VParticleChange* FurmanPiviProcess::PostStepDoIt(const G4Track& track, const G
         }
     }
     const auto keep = event->ReserveSecondaries(static_cast<G4int>(candidates.size()));
-    // Sous-ensemble uniforme sans remise si l'emission depasse les places
-    // restantes. Aucun tirage supplementaire quand tous sont conserves.
+    // Sous-ensemble uniforme sans remise si l'emission depasse les places.
     if (keep > 0 && keep < static_cast<G4int>(candidates.size())) {
         for (G4int i = 0; i < keep; ++i) {
             const auto j = i + static_cast<G4int>(G4UniformRand() * (candidates.size() - i));

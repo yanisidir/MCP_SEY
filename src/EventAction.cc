@@ -56,7 +56,7 @@ void EventAction::StartTrack(const G4Track* track)
 G4int EventAction::ReserveSecondaries(G4int requested)
 {
     // Compter avant la mise en attente : les descendants non encore suivis
-    // occupent deja leur place. Etat propre a cet evenement et a son worker.
+    // occupent deja leur place.
     const auto limit = fDetector->MaxTracks();
     const auto accepted =
         limit > 0
@@ -75,7 +75,9 @@ void EventAction::RecordExit(const G4Track* track, const G4StepPoint* point)
     const G4double t = point->GetGlobalTime() - fT0;
     fFirst = std::min(fFirst, t);
     fLast = std::max(fLast, t);
-    // Moyenne et variance en ligne : pas de tableau geant par avalanche.
+    // Moyenne et variance en ligne des temps d'arrivee DANS cet evenement :
+    // evite de stocker un tableau par avalanche. Donne TimeSpread_ns, qui est
+    // une largeur interne et non la dispersion entre evenements.
     const auto delta = t - fMean;
     fMean += delta / (fPrimary + fSecondary);
     fM2 += delta * (t - fMean);
@@ -84,7 +86,6 @@ void EventAction::RecordExit(const G4Track* track, const G4StepPoint* point)
 void EventAction::RecordDownstream(const G4Track* track, const G4StepPoint* point)
 {
     ++fAt50um;
-    // Table 1 : impacts individuels uniquement a +50 um.
     constexpr G4int table = 1;
     const auto t = point->GetGlobalTime() - fT0;
     if (!fDetector->SaveExits()) return;
@@ -112,9 +113,7 @@ void EventAction::RecordImpact(G4double energy, G4double angle)
     fImpactEnergy += energy;
     fImpactAngle += angle;
 
-    // Spectres cumules sur tout le run. Les histogrammes sont fusionnes entre
-    // threads par G4AnalysisManager, contrairement aux sommes ci-dessus qui
-    // restent locales a l'evenement.
+    // Les histogrammes sont fusionnes entre threads, les sommes ci-dessus non.
     auto* analysisManager = G4AnalysisManager::Instance();
     analysisManager->FillH1(0, energy / eV);
     analysisManager->FillH1(1, angle / degree);

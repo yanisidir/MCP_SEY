@@ -1,6 +1,6 @@
 # Suite du balayage 25 um / 3 mm, au-dela de 1700 V.
 # Statistique volontairement faible : on ne cherche ici que la tendance du gain,
-# pas le TTS (la FWHM directe exige 50 avalanches exploitables).
+# pas le TTS (son estimation directe exige 50 avalanches exploitables).
 #
 # ATTENTION. Le plafond de 1e6 tracks mord des que le gain depasse ~5e5, soit
 # vers 2000 V. Au-dela, le nombre reporte n'est plus un gain mais le plafond :

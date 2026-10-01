@@ -20,10 +20,11 @@ FurmanYields FurmanPiviModel::ComputeYields(G4double energy, G4double angle) con
     const G4double elastic = std::max(0.0, ComputeElasticYield(energy, angle));
     const G4double rediffused = std::max(0.0, ComputeRediffusedYield(energy, angle));
 
-    // Peng et al. Eq. (2) ajuste le rendement TOTAL mesure, pas la seule
-    // composante vraie. Celle-ci s'obtient en retranchant les deux composantes
-    // de reflexion, Peng Eq. (7) : la troncature a zero porte le seuil
-    // d'emission E', sous lequel l'impact ne cree aucun electron.
+    // Interpretation retenue de Peng Eq. (7) : Eq. (2) donne le rendement TOTAL
+    // et la composante vraie s'obtient par soustraction des reflexions. La
+    // troncature a zero porte le seuil d'emission E'. Cette lecture n'a pas pu
+    // etre confirmee : avec les parametres de Peng dans sa geometrie, le gain
+    // obtenu reste bien inferieur a celui qu'il publie (cf. WuModel.hh).
     const G4double total = std::max(0.0, ComputeTotalYield(energy, angle));
     const G4double trueSecondary = std::max(0.0, total - elastic - rediffused);
 
@@ -76,8 +77,6 @@ G4double FurmanPiviModel::ComputeElasticYield(
     return deltaNormal * angularFactor;
 }
 
-// =========================RediffusedYield===============================
-
 G4double FurmanPiviModel::ComputeRediffusedYield(
     G4double incidentEnergy,
     G4double incidentAngle) const
@@ -118,8 +117,6 @@ G4double FurmanPiviModel::ComputeRediffusedYield(
 
     return deltaNormal * angularFactor;
 }
-
-// ==============================TotalYield==================================
 
 G4double FurmanPiviModel::ComputeTotalYield(
     G4double incidentEnergy,
@@ -177,8 +174,6 @@ G4double FurmanPiviModel::ComputeTotalYield(
     return deltaPeak * universalFunction;
 }
 
-// =========================MultiplicityProbabilities===============================
-
 std::vector<G4double>
 FurmanPiviModel::BuildMultiplicityProbabilities(
     const FurmanYields& yields) const
@@ -231,7 +226,6 @@ FurmanPiviModel::BuildMultiplicityProbabilities(
         }
     }
 
-    // =====
     probabilities[0] = penetrationProbability * trueSecondaryProbabilities[0];
 
     probabilities[1] = reflectionProbability + penetrationProbability * trueSecondaryProbabilities[1];
@@ -249,8 +243,6 @@ FurmanPiviModel::BuildMultiplicityProbabilities(
     return probabilities;
 }
 
-// =========================MultiplicitySampling===============================
-
 G4int FurmanPiviModel::SampleMultiplicity(
     const std::vector<G4double>& probabilities) const
 {
@@ -266,8 +258,6 @@ G4int FurmanPiviModel::SampleMultiplicity(
 
     return static_cast<G4int>(probabilities.size() - 1);
 }
-
-// =========================SingleElectronTypeSampling===============================
 
 SEEType FurmanPiviModel::SampleSingleElectronType(
     const FurmanYields& yields,
@@ -285,8 +275,6 @@ SEEType FurmanPiviModel::SampleSingleElectronType(
 
     return SEEType::TrueSecondary;
 }
-
-// ========================================================
 
 FurmanEmissionResult FurmanPiviModel::GenerateEmission(
     G4double incidentEnergy,
@@ -340,12 +328,9 @@ FurmanEmissionResult FurmanPiviModel::GenerateEmission(
 
         if (type == SEEType::Elastic) {
             electron.kineticEnergy = SampleElasticEnergy(incidentEnergy);
-            // Un electron retrodiffuse elastiquement ne penetre pas le materiau :
-            // il conserve sa composante tangentielle et n'inverse que la normale.
             // Wu et al., Rev. Sci. Instrum. 79 (2008) 073104 : "the axial and
             // angular components of the electrons' velocity are left unchanged,
-            // while the radial component is reversed". Un tirage diffus effacerait
-            // la quantite de mouvement axiale accumulee dans le canal.
+            // while the radial component is reversed".
             electron.direction = SpecularDirection(incidentDirection, materialToVacuumNormal);
         }
         else if (type == SEEType::Rediffused) {
@@ -376,7 +361,6 @@ FurmanEmissionResult FurmanPiviModel::GenerateEmission(
         return result;
     }
 
-    // Case : n >= 2
     
     const auto sample =
         SampleTrueSecondaryEnergyGroup(incidentEnergy, result.multiplicity);
@@ -397,9 +381,6 @@ FurmanEmissionResult FurmanPiviModel::GenerateEmission(
     return result;
 }
 
-// =====================================================================
-// ========================SpecularDirection============================
-
 G4ThreeVector FurmanPiviModel::SpecularDirection(
     const G4ThreeVector& incidentDirection,
     const G4ThreeVector& materialToVacuumNormal) const
@@ -407,10 +388,8 @@ G4ThreeVector FurmanPiviModel::SpecularDirection(
     const G4ThreeVector normal = materialToVacuumNormal.unit();
     const G4ThreeVector incident = incidentDirection.unit();
 
-    // Modele de microfacettes : la normale locale d'une paroi reelle s'ecarte
-    // de la normale moyenne. On reflechit autour de cette normale perturbee.
-    // A rugosite nulle aucun tirage n'est consomme, la sequence aleatoire est
-    // donc identique au cas speculaire pur.
+    // Microfacettes : reflexion autour d'une normale perturbee. A rugosite
+    // nulle aucun tirage n'est consomme.
     G4ThreeVector axis = normal;
     const G4double roughness = fParameters.reflectionRoughness;
     if (roughness > 0.0) {
@@ -426,15 +405,11 @@ G4ThreeVector FurmanPiviModel::SpecularDirection(
     if (reflected.mag2() <= 0.0) {return normal;}
     reflected = reflected.unit();
 
-    // Une normale inclinee peut renvoyer la direction dans le materiau. On
-    // rabat alors la seule composante normale, ce qui conserve la tangentielle.
+    // Une normale inclinee peut renvoyer la direction dans le materiau.
     const G4double along = reflected.dot(normal);
     if (along <= 0.0) {reflected = (reflected - 2.0 * along * normal).unit();}
     return reflected;
 }
-
-// =====================================================================
-// =========================ElasticEnergy===============================
 
 G4double FurmanPiviModel::SampleElasticEnergy(
     G4double incidentEnergy) const
@@ -460,8 +435,6 @@ G4double FurmanPiviModel::SampleElasticEnergy(
 
 }
 
-// =========================RediffusedEnergy===============================
-
 G4double FurmanPiviModel::SampleRediffusedEnergy(G4double incidentEnergy) const
 {
     if (incidentEnergy <= 0.0) {return 0.0;}
@@ -477,8 +450,6 @@ G4double FurmanPiviModel::SampleRediffusedEnergy(G4double incidentEnergy) const
     return incidentEnergy * std::pow(u, 1.0 / (exponent + 1.0));
 
 }
-
-// =========================TrueSecondaryEnergy===============================
 
 std::vector<G4double> 
 FurmanPiviModel::SampleTrueSecondaryEnergies(G4double incidentEnergy,
@@ -511,8 +482,8 @@ FurmanPiviModel::SampleTrueSecondaryEnergyGroup(
     auto& energies = sample.energies;
     energies.resize(static_cast<std::size_t>(multiplicity));
 
-    // Keep a short direct fast path for easy cases. Every accepted group has
-    // the target product-Gamma distribution conditioned on sum(E_i) <= E0.
+    // Chemin rapide : tout groupe accepte suit la loi voulue, produit de
+    // Gamma conditionne a sum(E_i) <= E0.
     for (G4int attempt = 0; attempt < directAttempts; ++attempt)
     {
         G4double totalEnergy = 0.0;
@@ -533,13 +504,10 @@ FurmanPiviModel::SampleTrueSecondaryEnergyGroup(
 
     }
 
-    // The direct rejection becomes inefficient for high multiplicity at low
-    // incident energy. All electrons in a group have gamma distributions with
-    // the same scale. Their sum is therefore
-    // Gamma(multiplicity * shape, scale), while their normalized fractions
-    // follow an independent Dirichlet distribution. Sample that same
-    // conditional distribution with an adaptive power proposal matched to the
-    // gamma density slope at E0. This remains exact rejection sampling.
+    // Le rejet direct devient inefficace a haute multiplicite et basse energie.
+    // La somme suit Gamma(m * shape, scale) et les fractions normalisees une
+    // Dirichlet independante : on tire cette loi conditionnelle par une
+    // proposition en puissance adaptative. Le rejet reste exact.
     const G4double totalShape =
         static_cast<G4double>(multiplicity) * shape;
     const G4double matchedExponent =
@@ -592,8 +560,6 @@ FurmanPiviModel::SampleTrueSecondaryEnergyGroup(
     return sample;
 }
 
-// ==========================Gamma==============================
-
 G4double FurmanPiviModel::SampleGamma(
     G4double shape,
     G4double scale) const
@@ -642,8 +608,6 @@ G4double FurmanPiviModel::SampleGamma(
     }
 }
 
-// ========================TrueSecondaryShape================================
-
 G4double FurmanPiviModel::GetTrueSecondaryShape(
     G4int multiplicity) const
 {
@@ -656,8 +620,6 @@ G4double FurmanPiviModel::GetTrueSecondaryShape(
     
     return fParameters.trueSecondaryEnergyShape[index];
 }
-
-// =========================TrueSecondaryScale===============================
 
 G4double FurmanPiviModel::GetTrueSecondaryScale(
     G4int multiplicity) const
@@ -673,7 +635,6 @@ G4double FurmanPiviModel::GetTrueSecondaryScale(
     
 }
 
-// ========================================================
 G4ThreeVector FurmanPiviModel::SampleDiffuseDirection(
     const G4ThreeVector& materialToVacuumNormal) const
 {

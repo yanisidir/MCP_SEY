@@ -21,7 +21,6 @@ int main(int argc, char** argv)
         return argc > 2 ? 1 : 0;
     }
 
-    // Mode interactif si aucune macro n'est donnee.
     G4UIExecutive* ui = nullptr;
     if (argc == 1) ui = new G4UIExecutive(argc, argv);
 
@@ -29,11 +28,9 @@ int main(int argc, char** argv)
     auto* runManager = G4RunManagerFactory::CreateRunManager(
         ui ? G4RunManagerType::SerialOnly : G4RunManagerType::Default, 1);
 
-    // Geometrie.
     auto* detector = new DetectorConstruction;
     runManager->SetUserInitialization(detector);
 
-    // Physique : liste de reference completee par l'emission secondaire.
     auto* physicsList = new FTFP_BERT;
     physicsList->SetVerboseLevel(0);
     // Ne pas arreter artificiellement les electrons lents dans le vide.
@@ -41,23 +38,20 @@ int main(int argc, char** argv)
     physicsList->RegisterPhysics(new FurmanPiviPhysics(detector));
     runManager->SetUserInitialization(physicsList);
 
-    // La source vit dans le master : ses commandes sont acceptees avant que
-    // les workers existent, et ceux-ci la lisent a chaque evenement.
+    // La source vit dans le master : les workers la lisent a chaque evenement.
     auto* source = new GaussianSource;
     runManager->SetUserInitialization(new ActionInitialization(detector, source));
 
-    // Gestionnaire de visualisation.
     auto* visManager = new G4VisExecutive;
     visManager->Initialize();
 
     auto* uiManager = G4UImanager::GetUIpointer();
     int status = 0;
     if (!ui) {
-        // Mode batch.
         status = uiManager->ApplyCommand(G4String("/control/execute ") + argv[1]);
     }
     else {
-        // Mode interactif : vis.mac initialise le run et ouvre la vue.
+        // vis.mac initialise le run et ouvre la vue.
         status = uiManager->ApplyCommand("/control/execute macros/vis.mac");
         if (!status) ui->SessionStart();
         delete ui;

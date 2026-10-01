@@ -24,10 +24,6 @@
 
 namespace TransverseScan {
 
-// ============================================================================
-// 1. CONSTANTES ET TYPES
-// ============================================================================
-
 // Ordre commun aux calculs, graphiques et colonnes CSV.
 constexpr int kNumObservables = 12;
 constexpr int kNumConfigValues = 7;
@@ -60,12 +56,8 @@ const char* kConfigNames[] = {
     "DriftDistance_um"
 };
 
-
-// ============================================================================
-// 2. STATISTIQUES
-// ============================================================================
-
-// Statistique ENTRE avalanches : chaque avalanche a le meme poids.
+// Statistique ENTRE avalanches, a poids egal : une avalanche de gain 10 pese
+// autant qu'une de gain 10000, ce qui n'est pas une moyenne par electron.
 struct Average {
     long n = 0;
     double mean = 0.0;
@@ -100,11 +92,6 @@ struct Average {
     }
 };
 
-
-// ============================================================================
-// 3. DONNEES D'UN POINT DE SCAN
-// ============================================================================
-
 struct Point {
     int generation = 0;
 
@@ -122,11 +109,6 @@ struct Point {
     std::array<double, kNumConfigValues> config;
 };
 
-
-// ============================================================================
-// 4. OUTILS DE LECTURE ROOT
-// ============================================================================
-
 static double Value(TTree* tree, const char* name)
 {
     auto* leaf = tree->GetLeaf(name);
@@ -139,7 +121,6 @@ static double Value(TTree* tree, const char* name)
 
     return leaf->GetValue();
 }
-
 
 static void ValidateConfiguration(
     TTree* configuration,
@@ -175,13 +156,8 @@ static void ValidateConfiguration(
     }
 }
 
-
 static Point Read(const std::string& path)
 {
-    // ------------------------------------------------------------------------
-    // 4.1 Ouvrir le fichier et recuperer les arbres
-    // ------------------------------------------------------------------------
-
     TFile file(path.c_str());
 
     auto* configuration = file.Get<TTree>("configuration");
@@ -200,11 +176,6 @@ static Point Read(const std::string& path)
         );
     }
 
-
-    // ------------------------------------------------------------------------
-    // 4.2 Lire et verifier la configuration
-    // ------------------------------------------------------------------------
-
     ValidateConfiguration(configuration, path);
 
     Point point;
@@ -221,11 +192,6 @@ static Point Read(const std::string& path)
 
     // L'energie incidente est lue ensuite dans l'arbre events.
     point.config[6] = 0.0;
-
-
-    // ------------------------------------------------------------------------
-    // 4.3 Recuperer les compteurs par evenement
-    // ------------------------------------------------------------------------
 
     using EventKey = std::pair<int, int>;
 
@@ -283,11 +249,6 @@ static Point Read(const std::string& path)
         point.reached /= point.events;
     }
 
-
-    // ------------------------------------------------------------------------
-    // 4.4 Lire les passages a la face MCP et a +50 um
-    // ------------------------------------------------------------------------
-
     const std::array<TTree*, 2> tables = {
         exits,
         downstream
@@ -339,11 +300,6 @@ static Point Read(const std::string& path)
     point.electronsExit = exits->GetEntries();
     point.electrons50   = downstream->GetEntries();
 
-
-    // ------------------------------------------------------------------------
-    // 4.5 Construire les observables avalanche par avalanche
-    // ------------------------------------------------------------------------
-
     for (const auto& entry : counts) {
         const EventKey& key = entry.first;
 
@@ -363,8 +319,8 @@ static Point Read(const std::string& path)
             );
         }
 
-        // Il faut au moins 2 electrons dans chaque plan
-        // pour definir une largeur.
+        // Une largeur radiale n'est definie qu'a partir de deux electrons dans
+        // chaque plan ; les autres avalanches sont ecartees.
         if (exitSpot.n < 2 || spot50.n < 2) {
             continue;
         }
@@ -400,11 +356,6 @@ static Point Read(const std::string& path)
 
     return point;
 }
-
-
-// ============================================================================
-// 5. RECHERCHE DES FICHIERS DU SCAN
-// ============================================================================
 
 static std::vector<Point> LoadScan(const char* motif)
 {
@@ -505,11 +456,6 @@ static std::vector<Point> LoadScan(const char* motif)
     return points;
 }
 
-
-// ============================================================================
-// 6. EXPORT CSV ET RESUME CONSOLE
-// ============================================================================
-
 static void WriteCSV(
     const std::vector<Point>& points,
     const std::string& figure)
@@ -562,7 +508,6 @@ static void WriteCSV(
         csv << '\n';
     }
 }
-
 
 static void PrintSummary(
     const std::vector<Point>& points)
@@ -621,11 +566,6 @@ static void PrintSummary(
               << 100.0 * kContainmentFraction << " % des electrons.\n";
 }
 
-
-// ============================================================================
-// 7. GRAPHIQUES
-// ============================================================================
-
 static bool ComputeGenerationRange(
     const std::vector<Point>& points,
     double& xmin,
@@ -666,7 +606,6 @@ static bool ComputeGenerationRange(
     return true;
 }
 
-
 static void DrawPanel(
     TCanvas& canvas,
     const std::vector<Point>& points,
@@ -686,7 +625,6 @@ static void DrawPanel(
     double ymin = 0.0;
     double ymax = 0.0;
 
-    // Chercher l'echelle verticale.
     for (const Point& point : points) {
         for (int index : {first, second}) {
             if (index < 0) {
@@ -832,7 +770,6 @@ static void DrawPanel(
     legend->Draw();
 }
 
-
 static void DrawPlots(
     const std::vector<Point>& points,
     const std::string& figure)
@@ -977,14 +914,8 @@ static void DrawPlots(
 
 } // namespace TransverseScan
 
-
-// ============================================================================
-// 8. POINT D'ENTREE
-// ============================================================================
-//
-// Exemple :
+// Usage :
 // root -l -b -q 'analysis/scan_transverse.C("transverse_gen*.root")'
-//
 void scan_transverse(
     const char* motif = "transverse_gen*.root",
     const char* figure = "scan_transverse")
