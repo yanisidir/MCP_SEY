@@ -916,10 +916,23 @@ static void DrawPlots(
 
 // Usage :
 // root -l -b -q 'analysis/scan_transverse.C("transverse_gen*.root")'
+// Cree le dossier de sortie s'il manque : une copie fraiche du depot n'a pas de
+// dossier figures/, et ROOT echoue alors sans ecrire ni figure ni CSV.
+#ifndef MCP_PREPARER_SORTIE
+#define MCP_PREPARER_SORTIE
+static void PreparerSortie(const char* chemin)
+{
+    const TString dossier = gSystem->DirName(chemin);
+    if (dossier != "." && dossier != "" && gSystem->AccessPathName(dossier))
+        gSystem->mkdir(dossier, kTRUE);
+}
+#endif
+
 void scan_transverse(
     const char* motif = "transverse_gen*.root",
     const char* figure = "scan_transverse")
 {
+    PreparerSortie(figure);
     using namespace TransverseScan;
     gErrorIgnoreLevel = kWarning;
 

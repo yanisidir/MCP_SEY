@@ -185,9 +185,22 @@ static Point LirePoint(const std::string& chemin)
 }
 
 // Depuis la racine : root -l -b -q 'analysis/gain_voltage.C("root_files/scanV_*.root")'
+// Cree le dossier de sortie s'il manque : une copie fraiche du depot n'a pas de
+// dossier figures/, et ROOT echoue alors sans ecrire ni figure ni CSV.
+#ifndef MCP_PREPARER_SORTIE
+#define MCP_PREPARER_SORTIE
+static void PreparerSortie(const char* chemin)
+{
+    const TString dossier = gSystem->DirName(chemin);
+    if (dossier != "." && dossier != "" && gSystem->AccessPathName(dossier))
+        gSystem->mkdir(dossier, kTRUE);
+}
+#endif
+
 void gain_voltage(const char* motif = "root_files/scanV_*.root",
                   const char* figure = "figures/gain_voltage")
 {
+    PreparerSortie(figure);
     const TString dossier = gSystem->DirName(motif), patron = gSystem->BaseName(motif);
     TSystemDirectory repertoire(dossier, dossier);
     auto* contenu = repertoire.GetListOfFiles();

@@ -576,10 +576,23 @@ static void DrawPlots(
 
 // Usage :
 // root -l -b -q 'analysis/scan_voltage.C("voltage_*.root")'
+// Cree le dossier de sortie s'il manque : une copie fraiche du depot n'a pas de
+// dossier figures/, et ROOT echoue alors sans ecrire ni figure ni CSV.
+#ifndef MCP_PREPARER_SORTIE
+#define MCP_PREPARER_SORTIE
+static void PreparerSortie(const char* chemin)
+{
+    const TString dossier = gSystem->DirName(chemin);
+    if (dossier != "." && dossier != "" && gSystem->AccessPathName(dossier))
+        gSystem->mkdir(dossier, kTRUE);
+}
+#endif
+
 void scan_voltage(
     const char* motif = "voltage_*200events.root",
     const char* figure = "scan_voltage")
 {
+    PreparerSortie(figure);
     using namespace VoltageScan;
 
     const std::vector<Point> points = LoadScan(motif);

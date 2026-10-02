@@ -101,8 +101,21 @@ static PointBalayage LirePoint(const std::string& chemin)
 }
 
 // Depuis la racine : root -l -b -q 'analysis/scan_generations.C("scan_gen*.root")'
+// Cree le dossier de sortie s'il manque : une copie fraiche du depot n'a pas de
+// dossier figures/, et ROOT echoue alors sans ecrire ni figure ni CSV.
+#ifndef MCP_PREPARER_SORTIE
+#define MCP_PREPARER_SORTIE
+static void PreparerSortie(const char* chemin)
+{
+    const TString dossier = gSystem->DirName(chemin);
+    if (dossier != "." && dossier != "" && gSystem->AccessPathName(dossier))
+        gSystem->mkdir(dossier, kTRUE);
+}
+#endif
+
 void scan_generations(const char* motif = "scan_gen*.root", const char* figure = "scan_generations")
 {
+    PreparerSortie(figure);
     const TString dossier = gSystem->DirName(motif);
     const TString patron = gSystem->BaseName(motif);
     TSystemDirectory repertoire(dossier, dossier);

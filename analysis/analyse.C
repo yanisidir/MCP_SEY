@@ -3,14 +3,28 @@
 #include <TLeaf.h>
 #include <TCanvas.h>
 #include <TH1.h>
+#include <TSystem.h>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
 
 // Depuis la racine : root -l -b -q 'analysis/analyse.C("mcp.root")'
+// Cree le dossier de sortie s'il manque : une copie fraiche du depot n'a pas de
+// dossier figures/, et ROOT echoue alors sans ecrire ni figure ni CSV.
+#ifndef MCP_PREPARER_SORTIE
+#define MCP_PREPARER_SORTIE
+static void PreparerSortie(const char* chemin)
+{
+    const TString dossier = gSystem->DirName(chemin);
+    if (dossier != "." && dossier != "" && gSystem->AccessPathName(dossier))
+        gSystem->mkdir(dossier, kTRUE);
+}
+#endif
+
 void analyse(const char* fichier="tranche_0.root", const char* figure="mcp")
 {
+    PreparerSortie(figure);
     TFile input(fichier);
 
     auto* events = input.Get<TTree>("events");

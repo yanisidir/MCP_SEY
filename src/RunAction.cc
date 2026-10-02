@@ -92,7 +92,7 @@ RunAction::RunAction(const DetectorConstruction* detector, const GaussianSource*
 namespace {
 // G4AnalysisManager::OpenFile renvoie true meme quand l'ouverture echoue ; le
 // programme mourait alors bien plus loin, par une faute de segmentation. Le
-// chemin est donc verifie avant. Appelee par chaque fil : create_directories
+// chemin est donc verifie avant. Appelee par chaque thread : create_directories
 // est idempotente et sa variante a code d'erreur tolere la course.
 void PreparerDossierDeSortie(const G4String& sortie)
 {
@@ -132,7 +132,7 @@ void PreparerDossierDeSortie(const G4String& sortie)
 
 void RunAction::BeginOfRunAction(const G4Run*)
 {
-    if (G4Threading::G4GetThreadId() <= 0) {
+    if (G4Threading::G4GetThreadId() == 0 || !G4Threading::IsMultithreadedApplication()) {
         G4cout << "Modele d'emission secondaire : "
                << (fDetector->UseWuModel() ? "Wu et al. 2008"
                                            : "Furman-Pivi / Peng")
