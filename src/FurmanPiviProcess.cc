@@ -20,8 +20,14 @@
 #include <limits>
 
 namespace {
-// Meme placement pour une reflexion et pour les vrais secondaires. Le pore
-// est coupe aux faces : un deplacement vers l'axe peut depasser z=0 ou z=L.
+// Un electron emis exactement sur la paroi serait aussitot compte dans le verre.
+// On le decale vers l'interieur du pore, en verifiant le resultat plutot qu'en
+// le supposant : le pore est coupe aux faces, et pres d'un bord un decalage vers
+// l'axe peut sortir par z=0 ou z=L.
+//
+// Deux replis successifs si le point obtenu n'est pas interieur : reduire le
+// decalage par dichotomie, puis reculer vers le point precedent. L'exception
+// finale est volontaire -- mieux vaut s'arreter que d'emettre hors du volume.
 G4ThreeVector EmissionPosition(const G4Step& step, const G4ThreeVector& normal, G4double offset)
 {
     const auto* pre = step.GetPreStepPoint();
@@ -53,6 +59,14 @@ G4ThreeVector EmissionPosition(const G4Step& step, const G4ThreeVector& normal, 
 }
 }
 
+// Une reflexion doit ANNULER un franchissement que Geant4 a deja opere : quand
+// ce code s'execute, Transportation a place la trajectoire dans le verre. On
+// surcharge donc la mise a jour du pas pour la ramener dans le pore.
+//
+// Les champs du point final sont alors incoherents (ils decrivent le verre) et
+// doivent tous etre reecrits a la main. En oublier un ne provoque aucune erreur
+// visible : la trajectoire continue avec le mauvais materiau ou le mauvais
+// volume, et le resultat est silencieusement faux.
 G4Step* ReflectionParticleChange::UpdateStepForPostStep(G4Step* step)
 {
     G4ParticleChange::UpdateStepForPostStep(step);
@@ -62,8 +76,8 @@ G4Step* ReflectionParticleChange::UpdateStepForPostStep(G4Step* step)
     const auto* pre = step->GetPreStepPoint();
     auto* navigator = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();
     const auto direction = post->GetMomentumDirection();
-    // Une recherche absolue annule le franchissement vers le verre deja
-    // effectue par Transportation et retrouve le volume au point decale.
+    // Recherche ABSOLUE (et non relative au volume courant) : c'est elle qui
+    // annule le franchissement et retrouve le pore au point decale.
     const auto* volume = navigator->LocateGlobalPointAndSetup(
         post->GetPosition(), &direction, false, false);
     if (volume != pre->GetPhysicalVolume()) {

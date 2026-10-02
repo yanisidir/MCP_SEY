@@ -90,10 +90,11 @@ static Dispersion Disperser(std::vector<double> v)
     if (d.n >= 10) d.fwhmRobuste = 1.1774 * (quantile(0.84) - quantile(0.16));
 
     d.fwhmDirect = FwhmDirecte(v);
-    // Pas d'erreur analytique sur cet estimateur : incertitude estimee par
-    // bootstrap (200 retirages avec remise, graine fixe pour reproductibilite).
-    // Elle ne couvre que la fluctuation d'echantillonnage, pas le biais de
-    // binning.
+    // Pas de formule d'erreur pour cet estimateur : on l'estime par bootstrap.
+    // Le principe : retirer N valeurs AVEC REMISE dans l'echantillon lui-meme,
+    // recalculer la FWHM, et prendre l'ecart-type des 200 valeurs obtenues. Cela
+    // mesure la seule fluctuation d'echantillonnage, pas le biais de binning.
+    // Graine fixe pour que deux executions donnent la meme figure.
     if (std::isfinite(d.fwhmDirect)) {
         TRandom3 alea(12345);
         std::vector<double> tirage(v.size()), mesures;

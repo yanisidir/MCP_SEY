@@ -56,8 +56,11 @@ void DetectorConstruction::SetThickness(G4double thickness)
 {
     if (thickness == fThickness) return;
     fThickness = thickness;
-    // L'epaisseur redimensionne tous les volumes et change le champ V/L.
-    // destroyFirst evite d'accumuler les solides des runs precedents.
+    // Changer un parametre ne suffit pas : la geometrie doit etre reconstruite,
+    // sinon chaque thread garde l'ancienne dans son gestionnaire de transport.
+    // Ici l'argument destroyFirst vide les stores de solides -- necessaire car
+    // l'epaisseur redimensionne TOUS les volumes, et sans cela ceux des runs
+    // precedents s'accumulent en memoire.
     if (G4StateManager::GetStateManager()->GetCurrentState() == G4State_Idle)
         G4RunManager::GetRunManager()->ReinitializeGeometry(true);
 }
@@ -66,7 +69,8 @@ void DetectorConstruction::SetVoltage(G4double voltage)
 {
     if (voltage == fVoltage) return;
     fVoltage = voltage;
-    // Changer seulement fVoltage laisserait l'ancien champ dans le transport.
+    // Meme reconstruction, mais sans destroyFirst : la tension ne change que
+    // l'intensite du champ, les solides restent valables.
     if (G4StateManager::GetStateManager()->GetCurrentState() == G4State_Idle)
         G4RunManager::GetRunManager()->ReinitializeGeometry();
 }

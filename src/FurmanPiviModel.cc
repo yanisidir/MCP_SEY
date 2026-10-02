@@ -184,6 +184,10 @@ FurmanPiviModel::BuildMultiplicityProbabilities(
 
     std::vector<G4double> probabilities(maximumMultiplicity + 1, 0.0); // M + proba = 0 
 
+    // La multiplicite n'est pas une simple binomiale. Deux cas s'excluent :
+    // l'electron est reflechi (il repart seul, multiplicite 1), ou il penetre
+    // et engendre un nombre binomial de vrais secondaires. On construit donc
+    // la loi du second cas, puis on melange les deux.
     const G4double reflectionProbability = yields.elastic + yields.rediffused;
 
     if (reflectionProbability < 0.0 ||
@@ -226,6 +230,8 @@ FurmanPiviModel::BuildMultiplicityProbabilities(
         }
     }
 
+    // Melange des deux cas. Le piege est ici : le poids de la reflexion va sur
+    // n = 1 (un electron repart), surtout pas sur n = 0.
     probabilities[0] = penetrationProbability * trueSecondaryProbabilities[0];
 
     probabilities[1] = reflectionProbability + penetrationProbability * trueSecondaryProbabilities[1];
@@ -482,8 +488,12 @@ FurmanPiviModel::SampleTrueSecondaryEnergyGroup(
     auto& energies = sample.energies;
     energies.resize(static_cast<std::size_t>(multiplicity));
 
-    // Chemin rapide : tout groupe accepte suit la loi voulue, produit de
-    // Gamma conditionne a sum(E_i) <= E0.
+    // Les m energies suivent chacune une Gamma, mais leur somme ne peut pas
+    // depasser l'energie d'impact : on tire donc une loi CONDITIONNELLE.
+    //
+    // Chemin rapide : tirer le groupe entier et le rejeter si la somme deborde.
+    // Tout groupe accepte suit exactement la loi voulue. Le taux d'acceptation
+    // s'effondre quand m est grand ou l'energie faible, d'ou le plafond.
     for (G4int attempt = 0; attempt < directAttempts; ++attempt)
     {
         G4double totalEnergy = 0.0;
@@ -493,10 +503,7 @@ FurmanPiviModel::SampleTrueSecondaryEnergyGroup(
             totalEnergy += energy;
         }
 
-        /*
-        * Si la somme est autorisée, chaque énergie 
-        * individuelle est automatiquement <= E0.
-        */
+        // La somme bornee borne chaque terme : aucun test individuel n'est utile.
        if (totalEnergy <= incidentEnergy) {
 
            return sample;
@@ -504,10 +511,17 @@ FurmanPiviModel::SampleTrueSecondaryEnergyGroup(
 
     }
 
-    // Le rejet direct devient inefficace a haute multiplicite et basse energie.
-    // La somme suit Gamma(m * shape, scale) et les fractions normalisees une
-    // Dirichlet independante : on tire cette loi conditionnelle par une
-    // proposition en puissance adaptative. Le rejet reste exact.
+    // Chemin exact, quand le rejet direct a echoue. Il repose sur une propriete
+    // des lois Gamma de MEME echelle : leur somme S suit Gamma(m*shape, scale),
+    // et les fractions E_i/S suivent une Dirichlet INDEPENDANTE de S. On peut
+    // donc tirer separement la somme, puis la repartition -- et conditionner
+    // revient alors a tronquer la seule loi de S, ce qui est faisable.
+    //
+    // S est tiree dans une Gamma tronquee a [0, E0] par rejet, avec une
+    // proposition en loi puissance u^(1/n). L'exposant est choisi pour coller a
+    // la densite au voisinage de la troncature : quand matchedExponent > 0, la
+    // densite croit encore en E0 et cet exposant donne un bien meilleur taux
+    // d'acceptation que l'exposant naif totalShape.
     const G4double totalShape =
         static_cast<G4double>(multiplicity) * shape;
     const G4double matchedExponent =
@@ -570,12 +584,8 @@ G4double FurmanPiviModel::SampleGamma(
         );
     }
 
-    /*
-     * Pour 0 < shape < 1 :
-     *
-     * Gamma(shape) peut être obtenu à partir de
-     * Gamma(shape + 1) et d'une puissance uniforme.
-    */
+    // Marsaglia et Tsang ne couvre que shape >= 1. En dessous, on utilise
+    // l'identite Gamma(a) = Gamma(a+1) * U^(1/a), qui ramene au cas traite.
 
     if (shape < 1.0) {
         const G4double u = std::max(G4UniformRand(), std::numeric_limits<G4double>::min());
@@ -583,9 +593,11 @@ G4double FurmanPiviModel::SampleGamma(
         return SampleGamma(shape + 1.0, scale) * std::pow(u, 1.0 / shape);
     } 
 
-    /*
-     * Algorithme de Marsaglia et Tsang pour shape >= 1.
-    */
+    // Marsaglia et Tsang (2000). Une normale est transformee en v = (1+cx)^3,
+    // dont la densite approche celle de la Gamma ; le reste est un rejet.
+    // Le premier test est un "squeeze" : une borne polynomiale qui accepte la
+    // grande majorite des tirages sans evaluer de logarithme. Le second test
+    // est le critere exact, atteint seulement dans les cas douteux.
 
     const G4double d = shape - 1.0 / 3.0;
     const G4double c = 1.0 / std::sqrt(9.0 * d);
