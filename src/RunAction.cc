@@ -90,10 +90,11 @@ RunAction::RunAction(const DetectorConstruction* detector, const GaussianSource*
 }
 
 namespace {
-// G4AnalysisManager::OpenFile renvoie true meme quand l'ouverture echoue ; le
-// programme mourait alors bien plus loin, par une faute de segmentation. Le
-// chemin est donc verifie avant. Appelee par chaque thread : create_directories
-// est idempotente et sa variante a code d'erreur tolere la course.
+// Verifie le chemin de sortie avant OpenFile, qui renvoie true meme quand
+// l'ouverture echoue : sans ce controle, l'erreur ne se manifeste que bien plus
+// loin, par une faute de segmentation. Appelee par chaque thread :
+// create_directories est idempotente et sa variante a code d'erreur tolere la
+// course.
 void PreparerDossierDeSortie(const G4String& sortie)
 {
     const std::filesystem::path chemin(sortie.c_str());

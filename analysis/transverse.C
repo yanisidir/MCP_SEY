@@ -947,8 +947,8 @@ static void DrawCanvas(
 
 // Usage :
 // root -l -b -q 'analysis/transverse.C("transverse_gen50.root")'
-// Cree le dossier de sortie s'il manque : une copie fraiche du depot n'a pas de
-// dossier figures/, et ROOT echoue alors sans ecrire ni figure ni CSV.
+// Cree le dossier de sortie : ni TCanvas::SaveAs ni std::ofstream ne le font,
+// et l'ofstream du CSV echoue en silence si le dossier manque.
 #ifndef MCP_PREPARER_SORTIE
 #define MCP_PREPARER_SORTIE
 static void PreparerSortie(const char* chemin)
