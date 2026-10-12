@@ -162,7 +162,7 @@ root -l -b -q 'analysis/gain_voltage.C("root_files/scanWu_*.root","figures/gain"
 
 ```
 MCP_SEY.cc            entry point
-include/ src/         one class per file, following the B1-B5 examples
+include/ src/         one class per file
 macros/               run and scan macros
 analysis/             ROOT analysis macros
 ```
