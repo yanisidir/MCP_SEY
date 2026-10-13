@@ -3,14 +3,13 @@
 # Puis : root -l -b -q 'analysis/scan_thickness.C("root_files/scanField_*.root","figures/scan_field")'
 #
 # A champ constant l'energie acquise entre deux collisions ne change pas, mais
-# le nombre de collisions croit proportionnellement a L : le gain croit donc
-# EXPONENTIELLEMENT avec la longueur, sans optimum. Extrapolation depuis le
-# point a 1 mm (gain ~ 4e2) : ~9e3 a 1.5 mm, ~2e5 a 2 mm, ~4e6 a 2.5 mm,
-# ~9e7 a 3 mm. Le plafond de tracks mord donc a partir de 2.5 mm et le gain y
-# est minore ; la colonne limites(%) de l'analyse le signale.
+# le nombre de collisions croit proportionnellement a L
 #
 # setPlateDiameter doit verifier plateDiameter/2 > L*tan(angle) + D/(2cos),
 # soit 0.86 mm a L = 3 mm et 8 degres.
+#
+# Pas de 0.25 mm sur 0.5-2 mm, ou la courbe est la plus structuree ; au-dela le
+# pas reste de 0.5 mm. Les deux derniers points dominent le temps de calcul.
 /run/numberOfThreads 10
 /random/setSeeds 24092026 1117
 /mcp/setPlateDiameter 2 mm
@@ -36,9 +35,24 @@
 # l'en-tete. Baisser cette valeur pour un balayage exploratoire.
 /control/alias nEvents 100
 
-# ==================== L = 1.0 mm ====================
+# ==================== L = 0.5 mm ====================
+/control/alias Thickness 0.5
+/control/alias Voltage 500
+/control/execute macros/scan_field_point.mac
+
+# ==================== L = 0.75 mm ====================
+/control/alias Thickness 0.75
+/control/alias Voltage 750
+/control/execute macros/scan_field_point.mac
+
+# ==================== L = 1 mm ====================
 /control/alias Thickness 1
 /control/alias Voltage 1000
+/control/execute macros/scan_field_point.mac
+
+# ==================== L = 1.25 mm ====================
+/control/alias Thickness 1.25
+/control/alias Voltage 1250
 /control/execute macros/scan_field_point.mac
 
 # ==================== L = 1.5 mm ====================
@@ -46,7 +60,12 @@
 /control/alias Voltage 1500
 /control/execute macros/scan_field_point.mac
 
-# ==================== L = 2.0 mm ====================
+# ==================== L = 1.75 mm ====================
+/control/alias Thickness 1.75
+/control/alias Voltage 1750
+/control/execute macros/scan_field_point.mac
+
+# ==================== L = 2 mm ====================
 /control/alias Thickness 2
 /control/alias Voltage 2000
 /control/execute macros/scan_field_point.mac
@@ -56,7 +75,7 @@
 /control/alias Voltage 2500
 /control/execute macros/scan_field_point.mac
 
-# ==================== L = 3.0 mm ====================
+# ==================== L = 3 mm ====================
 /control/alias Thickness 3
 /control/alias Voltage 3000
 /control/execute macros/scan_field_point.mac
