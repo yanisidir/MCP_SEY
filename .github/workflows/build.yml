@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image:carlomt/geant4:11.4.1-gui
+      image: carlomt/geant4:11.4.1-gui
 
     
 
@@ -23,7 +23,7 @@ jobs:
         run: geant4-config --version
 
       - name: Configurer Cmake
-        run: cmake -S . -B build
+        run: cmake -S . -B build -DWITH_GEANT4UIVIS=OFF
 
       - name: Compiler
         run: cmake --build build --parallel 4
