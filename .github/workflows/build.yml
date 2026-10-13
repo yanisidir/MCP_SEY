@@ -1,0 +1,20 @@
+name: Compilation Geant4
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Configurer Cmake
+        run: cmake -S . -B build
+
+      - name: Compiler
+        run: cmake --build build --parallel 4
