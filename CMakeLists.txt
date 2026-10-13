@@ -38,3 +38,14 @@ foreach(macro ${MCP_SEY_MACROS})
     get_filename_component(name ${macro} NAME)
     configure_file(${macro} ${CMAKE_CURRENT_BINARY_DIR}/macros/${name} COPYONLY)
 endforeach()
+
+
+include(CTest)
+
+if (BUILD_TESTING)
+    add_test(NAME smoke_test 
+             COMMAND $<TARGET_FILE:MCP_SEY>
+                     ${CMAKE_CURRENT_SOURCE_DIR}/macros/tests/smoke.mac)
+    set_tests_properties(smoke_test PROPERTIES TIMEOUT 120)
+
+endif()

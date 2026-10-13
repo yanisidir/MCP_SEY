@@ -27,3 +27,6 @@ jobs:
 
       - name: Compiler
         run: cmake --build build --parallel 4
+
+      - name: Executer les tests
+        run: ctest --test-dir build --output-on-failure
