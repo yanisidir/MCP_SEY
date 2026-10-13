@@ -5,7 +5,15 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-find_package(Geant4 REQUIRED ui_all vis_all)
+# find_package(Geant4 REQUIRED ui_all vis_all)
+
+option(WITH_GEANT4UIVIS "Enable Geant4 UI and visualization" ON)
+
+if(WITH_GEANT4UIVIS)
+    find_package(Geant4 REQUIRED ui_all vis_all)
+else()
+    find_package(Geant4 REQUIRED)
+endif()
 
 add_executable(MCP_SEY
     MCP_SEY.cc

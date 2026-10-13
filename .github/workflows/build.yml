@@ -7,11 +7,20 @@ on:
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
+
+    container:
+      image:carlomt/geant4:11.4.1-gui
+
+    
 
     steps:
       - name: Recuperer le code
         uses: actions/checkout@v4
+
+      - name: Verifier Geant4
+        run: geant4-config --version
 
       - name: Configurer Cmake
         run: cmake -S . -B build
